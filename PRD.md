@@ -57,13 +57,13 @@ This was conceived while iterating on a React admin panel (the `chatlytics.ai` p
 ## 5. How it works (UX walkthrough)
 
 ### 5.1 Setup (once)
-1. `npm run host -- --root <path-to-project>` starts the local host. It prints: the **port** it bound, a **pairing token**, and the **notes directory** (defaults to `<root>/notes`).
-2. Load the unpacked extension in Chrome (`chrome://extensions` → Load unpacked → `dist/`).
-3. Click the extension icon → paste the **pairing token** (and confirm the detected host). This is stored in `chrome.storage.local`.
+1. For **each project**, start a host pointed at its repo and dev URL: `npm run host -- --root <path-to-project> --origin http://localhost:<devPort>`. It prints the project name, bound port, declared origin(s), a **pairing token**, and the notes dir. Run one per project you're reviewing (§6.1).
+2. Load the unpacked extension in Chrome (`chrome://extensions` → Load unpacked → the WXT `.output` dir).
+3. Click the extension icon → it lists every discovered host with its project name; paste/confirm each **token** (or use a shared `STICKYFIX_TOKEN` to enter it once). Stored in `chrome.storage.local` (persists across restarts — §7.6).
 
 ### 5.2 Review session
 1. Navigate to the page you want to review (e.g. `http://localhost:5173` or `https://app.chatlytics.ai`).
-2. Click the extension icon → **Enter Review Mode**. A small connection chip appears confirming "Connected → saving to `<notesDir>`". The chip is **draggable** (so it never blocks what you need to click).
+2. Click the extension icon → **Enter Review Mode**. A small connection chip appears showing the **project this tab routes to** and its notes dir (e.g. "→ proj-a · proj-a/notes"). If the tab's origin isn't mapped yet, the chip prompts you to pick the project once. The chip is **draggable** (so it never blocks what you need to click).
 3. The review toolbar shows two tools:
    - **`+` (Free note):** click it → a **post-it note** opens wherever convenient. Type your note. **Send.** Captures: url, page title, timestamp, viewport, and a visible-tab screenshot. The `+` button itself is **draggable** so it can be moved out of the way.
    - **🎯 (Element note):** click it → cursor enters **pick mode**; hovering highlights the element under the cursor with an outline + a small label (tag + size). Click an element → a post-it opens **pre-populated** with the captured element context (shown as a compact summary; full detail goes into the file). Type your note. **Send.**
@@ -98,6 +98,24 @@ Two components + the filesystem as the contract.
 ```
 
 **Why a host?** MV3 extensions are sandboxed and cannot write to arbitrary filesystem paths. The File System Access API requires a per-session permission re-grant (friction in an iterative loop) and can't target an exact server path silently. A tiny localhost host owns the notes directory, assigns serials atomically, validates paths, and writes files — this is the chosen approach (path "A" from design discussion).
+
+### 6.1 Multi-project routing (concurrent sessions)
+
+You often run **several projects at once** — multiple CC sessions, each project's UI in its own Chrome tab. Routing is **automatic by the tab's origin** (`scheme://host:port`) — you **never pick a project per note**.
+
+- **One host per project.** Start a host per project, pointed at its repo and told its dev URL: `stickyfix-host --root D:\proj-a --origin http://localhost:5173`. Each host picks a free port in 39240-39260 and writes only into **its own** `notes/`.
+- **The extension discovers ALL live hosts** (probes the whole port range, collects every responder) and builds a registry `{ project, port, token, origins }` from each `/status`.
+- **Each note routes by the active tab's origin** to the host that advertises it. Bounce between tabs freely — zero picks.
+- **Unknown origin** (no host declares it): the extension asks **once** — a dropdown of discovered hosts ("map this tab → project") — and persists `origin → host` in `chrome.storage`. Never asked again for that origin. This one-time mapper is the *only* place a dropdown appears; it doubles as the manual override.
+- **Same-origin collision** (two projects both on `localhost:3000`): the page may self-identify with `<meta name="stickyfix-project" content="proj-a">` or `window.__stickyfix_project = "proj-a"`; the extension prefers that over the origin map. Optional, for the rare clash.
+- **Tokens across many hosts:** each host has its own token, OR set a shared token (`--token` / `STICKYFIX_TOKEN` env) across your hosts so you paste it **once**. The popup lists discovered hosts with project + token state.
+
+```
+tab :5173      ─┐                      ┌─► hostA(--root proj-a) ─► proj-a/notes/
+tab :3000      ─┤  extension routes    ├─► hostB(--root proj-b) ─► proj-b/notes/
+tab app.chatl  ─┘  by tab origin ──────┴─► hostC(--root chatl)  ─► chatl/notes/
+   (zero per-note picks; 1-time map only for an unmapped origin)
+```
 
 ## 7. Component spec — Chrome Extension (MV3)
 
@@ -139,13 +157,21 @@ Also capture per-note: `url`, `title`, `viewport {width,height,devicePixelRatio}
 
 **Capture mechanics (there is no native 'capture region' API):** grab the full visible viewport with `chrome.tabs.captureVisibleTab` (a real screenshot — higher fidelity than DOM-to-canvas libs like html2canvas, which is why we don't use them here), then **crop to the target rectangle with a canvas `drawImage(img, sx,sy,sw,sh, 0,0,dw,dh)`** in the extension (keeps the host dependency-light). **Multiply the CSS-pixel rect by `devicePixelRatio`** before cropping — the captured bitmap is at device pixels, or HiDPI crops misalign. **Before every capture, hide stickyfix's own UI** (scrim, note card, chip, highlight) so the shot is clean page pixels, then restore.
 
-### 7.4 Host discovery & auth
-- On entering Review Mode, the service worker probes ports `39240..39260` on `127.0.0.1`, calling `GET /status`; accept the first that returns `{ app: "stickyfix", ... }`.
-- Store the discovered port + the user-entered **token** in `chrome.storage.local`.
-- Every `POST /annotation` includes header `X-Stickyfix-Token: <token>`. If missing/wrong, the host rejects (see §8.4). Surface auth failures as a visible toast, not a silent console log.
+### 7.4 Host discovery, routing & auth
+- On entering Review Mode (and on refresh), the service worker probes ports `39240..39260` on `127.0.0.1`, calling `GET /status`, and collects **every** responder returning `{ app: "stickyfix", name, origins, ... }` into a **host registry**.
+- **Routing (see §6.1):** for each note, resolve the active tab's origin → host in this order: (1) a host advertising this origin; else (2) a persisted `origin → host` mapping; else (3) a page self-id (`<meta name="stickyfix-project">` / `window.__stickyfix_project`); else (4) ask once via the host dropdown and persist. Never per-note.
+- Store the registry + per-host **tokens** + the `origin → host` map in `chrome.storage.local`.
+- Every `POST /annotation` goes to the **resolved** host with header `X-Stickyfix-Token: <that host's token>`. If missing/wrong, the host rejects (see §8.4). Surface routing/auth failures (no host for this origin, token rejected) as a visible toast — never a silent drop.
 
 ### 7.5 Error handling (no silent failures)
 - Connection lost / host down / 4xx-5xx / token rejected → **visible toast** in the page UI with the reason. Never swallow a failed Send. (The whole point is reliability of capture; a dropped note is a regression.)
+
+### 7.6 Persistence (survives Chrome restart)
+All settings live in **`chrome.storage.local`** (Chrome persists it to disk, scoped to the extension) — **not** in the service worker's memory. This matters because MV3 service workers are **ephemeral**: Chrome kills the background worker after ~30s idle and respawns it on demand, wiping any in-memory state.
+- Persist in `chrome.storage.local`: the host registry (last-seen ports/names/origins), per-host tokens, the `origin → host` map, and review-mode prefs. These **survive Chrome restart, extension reload, and service-worker recycling**.
+- On startup/wake the worker **re-discovers** live hosts (ports may have changed) and reconciles the stored map by **project `name` + origin**, not by port — so a host that restarted on a different port re-binds to the same project automatically.
+- Tokens persist (paste once). If a host rotates its token, the next Send 401s → toast → re-enter for that host only.
+- `chrome.storage.local` is per-profile and **not** synced — intended, so tokens never leave the machine.
 
 ## 8. Component spec — `stickyfix-host`
 
@@ -153,16 +179,18 @@ A small Node program. Prefer **zero runtime dependencies** (use built-in `http`,
 
 ### 8.1 CLI
 ```
-stickyfix-host --root <projectRoot> [--notes-dir <dir>] [--port <preferred>] [--token <token>]
+stickyfix-host --root <projectRoot> [--origin <url> ...] [--name <project>] [--notes-dir <dir>] [--port <preferred>] [--token <token>]
 ```
 - `--root` (required): the project root. Writes are confined to it.
+- `--origin <url>` (repeatable, recommended): the dev URL(s) this project is served at (e.g. `http://localhost:5173`). Advertised in `/status` so the extension auto-routes tabs on that origin to this host with **zero picks**. Omit and the extension asks to map the origin once (§6.1).
+- `--name <project>` (default: basename of `--root`): display name in the extension's host list; also the key the `origin → host` map re-binds against across restarts.
 - `--notes-dir` (default `<root>/notes`): where `.md` files land. Must resolve **inside** `--root` (reject otherwise).
 - `--port`: preferred port; else first free in `39240..39260`.
-- `--token`: fixed token; else generate a random one (`crypto.randomUUID()` or 24-char base64url) and **print it** on startup.
-- On startup print, clearly: bound port, token, absolute notes dir. Also write the token to `<root>/.stickyfix-token` (gitignored) for convenience.
+- `--token`: fixed token; else `STICKYFIX_TOKEN` env; else generate a random one (`crypto.randomUUID()`) and **print it**. Use a shared `--token`/env across your hosts to paste it once in the extension.
+- On startup print, clearly: project name, bound port, declared origins, token, absolute notes dir. Also write the token to `<root>/.stickyfix-token` (gitignored) for convenience.
 
 ### 8.2 Endpoints
-- `GET /status` → `{ app: "stickyfix", version, notesDir, root }`. **No token required** (discovery handshake; returns no secrets).
+- `GET /status` → `{ app: "stickyfix", version, name, root, notesDir, origins: [...] }`. **No token required** (discovery handshake; `name`/`origins` are not sensitive, no secrets returned).
 - `OPTIONS *` → CORS preflight (see §8.4).
 - `POST /annotation` → **token required**. Body = annotation JSON (§9.1 shape). Writes the `.md` (+ screenshot). Returns `{ ok: true, file: "0007-20260531-143022.md", serial: 7 }`. On error `400/401/500` with `{ ok:false, error }`.
 
@@ -310,8 +338,8 @@ stickyfix/
 Order them so there's an end-to-end vertical slice early.
 
 - **M1 — Repo scaffold (WXT):** `npm create wxt`, `wxt.config.ts`, tsconfig, folder layout, single `public/icon.png` (WXT generates sizes), MIT license already present. `npm run build` produces an empty-but-loadable extension + host bundle.
-- **M2 — Host MVP:** HTTP server, port discovery (39240-39260), `GET /status`, `POST /annotation` → writes a minimal `.md` with serial naming, token auth, CORS, path/size guards. Unit-test serial assignment + path safety.
-- **M3 — Extension skeleton + connection:** MV3 manifest, popup with token entry + Review Mode toggle, dynamic injection, draggable connection chip, host discovery. **Vertical slice:** entering review mode connects and shows the notes dir.
+- **M2 — Host MVP:** HTTP server, port discovery (39240-39260), `GET /status` (advertises `name` + declared `--origin`s), `POST /annotation` → writes a minimal `.md` with serial naming, token auth, CORS, path/size guards. Unit-test serial assignment + path safety.
+- **M3 — Extension skeleton + multi-host routing:** MV3 manifest, popup listing **all discovered hosts** + per-host token entry, Review Mode toggle, dynamic injection, draggable connection chip, **discover ALL hosts + route by tab origin** (one-time `origin → project` map persisted in `chrome.storage.local`; `<meta>` self-id hook; re-bind by name+origin on restart). **Vertical slice:** with two hosts up, each tab's chip shows the correct project it routes to, and the mapping survives a Chrome restart.
 - **M4 — Free-note mode:** draggable `+` FAB → post-it card → Send → screenshot capture → POST → file on disk. End-to-end works for free notes.
 - **M5 — Element-note mode:** picker overlay + hover highlight + `Esc` cancel; capture (selector via `@medv/finder`, computed styles, outerHTML, rect, dataset, react fiber, a11y); post-it pre-filled; on Send, **auto element-highlight screenshot (`+1`)** → richer `.md`.
 - **M6 — Region capture + visual design pass (G8):** the **📷 camera tool** (dim scrim, crosshair, `interact.js` drag-rectangle, DPR-correct extension-side crop, hide-own-UI, deletable `×` thumbnails, `+N` naming, multiple per note); plus the sticky-note aesthetic — real paper look, smooth drag, mode color-coding, success/error toasts. Use `frontend-design` principles.
@@ -340,6 +368,7 @@ The architecture in this PRD (and Appendix A) was derived by **studying** the op
 9. Repo is public, MIT, README has install + usage; no GPL code present (clean-room §13 honored).
 10. Host binds only `127.0.0.1` (verify it is NOT reachable from another LAN host).
 11. The **📷 camera tool** dims the page, region-drag yields a **DPR-correct cropped** PNG named `<noteBase>+<N>.png` in the notes folder **with stickyfix's own UI excluded** from the shot, shows as a deletable `×` thumbnail in the post-it, and its path is written into the `.md`. Multiple captures increment `+2`, `+3`.
+12. **Multi-project routing:** with two hosts running (proj-a `--origin :5173`, proj-b `--origin :3000`), a note on the `:5173` tab lands in `proj-a/notes/` and a note on the `:3000` tab lands in `proj-b/notes/`, with **no per-note project selection**. An unmapped origin prompts the one-time picker, then routes automatically. The mapping + tokens **survive a Chrome restart** (`chrome.storage.local`), re-binding by project name even if a host's port changed.
 
 ## 15. Open decisions (safe defaults chosen; change only with reason)
 - **Serial scope:** per-notes-dir (per project). ✔ default.
@@ -350,6 +379,8 @@ The architecture in this PRD (and Appendix A) was derived by **studying** the op
 - **Screenshot location/format:** images live **in the notes dir** alongside the `.md`, named `<noteBase>+<N>.png` (no `assets/` subdir). ✔.
 - **Cropping side:** done **extension-side** (canvas), so the host stays near-zero-dep. ✔.
 - **Libraries (don't reinvent):** WXT (framework), `@medv/finder` (selectors), `interact.js` (drag + marquee), `yaml` (host frontmatter), native `captureVisibleTab` + canvas (screenshots). ✔.
+- **Concurrent projects:** **host-per-project**; the extension discovers all live hosts and **auto-routes by tab origin** (one-time map for unknown origins; optional `<meta name="stickyfix-project">` for same-origin clashes). Notes stay in each project's own `notes/`. Central store + prefix was rejected — it orphans notes from their repo and complicates the skill. ✔.
+- **Settings persistence:** `chrome.storage.local` (survives Chrome restart + MV3 service-worker recycling; never in worker memory). Re-bind hosts by `name`+origin, not port. ✔.
 
 ---
 
