@@ -130,19 +130,20 @@ async function handleAnnotation(
 export function createHostServer(cfg: Config): http.Server {
   const server = http.createServer((req, res) => {
     const method = req.method ?? 'GET';
-    const url = req.url ?? '/';
+    // WR-01: match on the path only — strip query string so /status?x=1 still routes correctly
+    const path = (req.url ?? '/').split('?', 1)[0];
 
     if (method === 'OPTIONS') {
       handleOptions(req, res);
       return;
     }
 
-    if (method === 'GET' && url === '/status') {
+    if (method === 'GET' && path === '/status') {
       handleStatus(req, res, cfg);
       return;
     }
 
-    if (method === 'POST' && url === '/annotation') {
+    if (method === 'POST' && path === '/annotation') {
       handleAnnotation(req, res, cfg).catch((e: unknown) => {
         // Last-resort: if handler itself threw unexpectedly and response not started
         if (!res.headersSent) {
