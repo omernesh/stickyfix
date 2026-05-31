@@ -22,4 +22,7 @@ Thumbs.db
 .idea/
 .claude/
 
+# Private business/strategy docs — never publish to the public MIT repo
+private/
+
 # GSD planning is committed; nothing to ignore there
