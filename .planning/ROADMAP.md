@@ -63,7 +63,19 @@ Plans:
   4. A POST containing a PNG data-URL writes both the .md and the +1.png file next to it with correct frontmatter
   5. A path-traversal attempt (../../../etc/passwd in notes path) is rejected; body over 12 MB returns 413
 
-**Plans**: TBD
+**Plans**: 3 plans
+Plans:
+**Wave 1**
+
+- [ ] 02-01-PLAN.md — Host core modules + unit tests: config, serial mutex, security (token/path/body-cap), write-note (frontmatter+PNG) (HOST-05/06/07/08/09/11/12/13)
+
+**Wave 2** *(blocked on Wave 1)*
+
+- [ ] 02-02-PLAN.md — HTTP server wiring: server.ts routing+CORS, index.ts 127.0.0.1 port-scan boot, integration test (HOST-01/02/03/04/05/07/08/10/12/13)
+
+**Wave 3** *(blocked on Wave 2)*
+
+- [ ] 02-03-PLAN.md — Smoke-test rewrite for long-running server + full npm run check gate (HOST-01/02/03/04/05/07/08/12)
 
 ### Phase 3: Extension Skeleton + SW Relay Proof
 
@@ -168,7 +180,7 @@ Phases execute in numeric order: 1 → 2 → 3 → 4 → 5 → 6 → 7 → 8
 | Phase | Plans Complete | Status | Completed |
 |-------|----------------|--------|-----------|
 | 1. Scaffold & Clean-Room Foundation | 3/3 | Complete    | 2026-05-31 |
-| 2. Host MVP | 0/TBD | Not started | - |
+| 2. Host MVP | 0/3 | Not started | - |
 | 3. Extension Skeleton + SW Relay Proof | 0/TBD | Not started | - |
 | 4. Free-Note Mode + Capture Utilities | 0/TBD | Not started | - |
 | 5. Element-Note Mode + Rich Context Capture | 0/TBD | Not started | - |
