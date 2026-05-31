@@ -474,13 +474,22 @@ chrome.runtime.onMessage.addListener(
           );
         return true;
 
-      case SFX_CAPTURE_TAB:
-        handleCaptureTab((msg as MsgCaptureTab).tabId)
+      case SFX_CAPTURE_TAB: {
+        // T-04 IDOR / T-03-01 anti-spoof: a content script may only capture
+        // ITS OWN tab. Bind the requested tabId to sender.tab.id (the same
+        // trust model SFX_GET_TAB_ID uses) — never trust tabId from the body.
+        const reqTabId = (msg as MsgCaptureTab).tabId;
+        if (sender.tab?.id == null || sender.tab.id !== reqTabId) {
+          sendResponse({ ok: false, error: 'forbidden' });
+          return true;
+        }
+        handleCaptureTab(reqTabId)
           .then(sendResponse)
           .catch((err: unknown) =>
             sendResponse({ ok: false, error: String(err) })
           );
         return true; // MANDATORY — captureVisibleTab is async (Pitfall 1)
+      }
 
       default:
         // Unknown message type — do not return true (no async response)
