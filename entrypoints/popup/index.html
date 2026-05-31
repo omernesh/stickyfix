@@ -8,10 +8,11 @@
   </head>
   <body>
     <div id="sfx-popup-root">
-      <!-- Header: wordmark + host count summary -->
+      <!-- Header: wordmark + host count summary + always-visible Refresh -->
       <header id="sfx-header">
         <span id="sfx-wordmark">stickyfix</span>
         <span id="sfx-host-summary"></span>
+        <button id="sfx-refresh-btn" type="button">Refresh</button>
       </header>
 
       <!-- Host list container (one row per discovered host) -->
@@ -21,7 +22,6 @@
       <section id="sfx-empty-state" hidden>
         <p id="sfx-empty-msg">No hosts found on 39240&#x2013;39260.</p>
         <p id="sfx-empty-hint">Start one with:<br><code>npm run host -- --root &lt;dir&gt;</code></p>
-        <button id="sfx-refresh-btn" type="button">Refresh</button>
       </section>
 
       <!-- Review Mode toggle -->
