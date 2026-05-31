@@ -1,15 +1,17 @@
 // scripts/host-smoke-test.mjs
-// Spawns the compiled host stub against a temp --root and asserts the startup JSON.
-// Part of BUILD-05: run via `node scripts/host-smoke-test.mjs` or `npm run check`.
+// Spawns the compiled host server against a temp --root, reads the startup JSON line
+// via readline (Pattern 12 — server runs indefinitely; spawnSync would hang).
+// Part of npm run check: asserts startup line shape and GET /status response.
 
-import { spawnSync } from 'node:child_process';
+import { spawn } from 'node:child_process';
+import { createInterface } from 'node:readline';
 import { existsSync, mkdtempSync, rmSync } from 'node:fs';
 import { tmpdir } from 'node:os';
 import { join } from 'node:path';
 
 const HOST_DIST = 'dist/host/src/index.js';
 
-// Pitfall 6 guard: fail with a helpful message if host has not been built yet
+// Guard: fail with a helpful message if host has not been built yet
 if (!existsSync(HOST_DIST)) {
   console.error(
     `smoke test: MISSING ${HOST_DIST}\n` +
@@ -19,40 +21,90 @@ if (!existsSync(HOST_DIST)) {
 }
 
 const tmpRoot = mkdtempSync(join(tmpdir(), 'sfx-smoke-'));
+
+let child;
 try {
-  const result = spawnSync(
-    process.execPath,
-    [HOST_DIST, '--root', tmpRoot],
-    { encoding: 'utf8', timeout: 5000 }
-  );
+  child = spawn(process.execPath, [HOST_DIST, '--root', tmpRoot], {
+    stdio: ['ignore', 'pipe', 'pipe'],
+  });
 
-  if (result.error || result.status !== 0) {
-    console.error('smoke test: host exited non-zero or errored');
-    if (result.stderr) console.error(result.stderr);
-    if (result.error) console.error(result.error.message);
-    process.exit(1);
-  }
+  // Collect stderr for diagnostics
+  const stderrLines = [];
+  child.stderr.on('data', (chunk) => stderrLines.push(chunk.toString()));
 
-  let parsed;
+  // Read the startup JSON line (Pattern 12)
+  const startupLine = await new Promise((resolve, reject) => {
+    const timer = setTimeout(() => {
+      reject(new Error('smoke test: timeout waiting for startup JSON line (5 s)'));
+    }, 5000);
+
+    const rl = createInterface({ input: child.stdout });
+    rl.once('line', (line) => {
+      clearTimeout(timer);
+      rl.close();
+      resolve(line);
+    });
+
+    child.once('error', (err) => {
+      clearTimeout(timer);
+      reject(err);
+    });
+
+    child.once('exit', (code) => {
+      clearTimeout(timer);
+      if (code !== null && code !== 0) {
+        reject(new Error(`smoke test: host exited with code ${code}\nstderr: ${stderrLines.join('')}`));
+      }
+    });
+  });
+
+  // Parse startup JSON
+  let startup;
   try {
-    parsed = JSON.parse(result.stdout.trim());
+    startup = JSON.parse(startupLine);
   } catch {
-    console.error('smoke test: stdout is not valid JSON');
-    console.error('stdout was:', result.stdout);
+    console.error('smoke test: startup line is not valid JSON:', startupLine);
     process.exit(1);
   }
 
-  if (parsed.app !== 'stickyfix') {
-    console.error(`smoke test: expected app:"stickyfix", got: ${JSON.stringify(parsed.app)}`);
+  // Assert startup shape
+  if (startup.app !== 'stickyfix') {
+    console.error(`smoke test: expected app:"stickyfix", got: ${JSON.stringify(startup.app)}`);
+    process.exit(1);
+  }
+  if (typeof startup.port !== 'number' || startup.port < 1) {
+    console.error(`smoke test: expected numeric port in startup, got: ${JSON.stringify(startup.port)}`);
+    process.exit(1);
+  }
+  if (startup.root !== tmpRoot) {
+    console.error(`smoke test: root mismatch — expected ${tmpRoot}, got ${startup.root}`);
     process.exit(1);
   }
 
-  if (parsed.root !== tmpRoot) {
-    console.error(`smoke test: root mismatch — expected ${tmpRoot}, got ${parsed.root}`);
+  // Probe GET /status
+  const statusRes = await fetch(`http://127.0.0.1:${startup.port}/status`);
+  if (!statusRes.ok) {
+    console.error(`smoke test: GET /status returned ${statusRes.status}`);
+    process.exit(1);
+  }
+
+  const status = await statusRes.json();
+  if (status.app !== 'stickyfix') {
+    console.error(`smoke test: /status.app expected "stickyfix", got ${JSON.stringify(status.app)}`);
+    process.exit(1);
+  }
+  if (status.token !== undefined) {
+    console.error('smoke test: /status must NOT include the token field');
     process.exit(1);
   }
 
   console.log('smoke test: PASS');
 } finally {
+  // Always kill the child and clean up temp dir
+  if (child) {
+    child.kill('SIGTERM');
+    // Wait briefly for clean exit on Windows (SIGTERM may not be immediate)
+    await new Promise((resolve) => setTimeout(resolve, 200));
+  }
   rmSync(tmpRoot, { recursive: true, force: true });
 }
