@@ -15,7 +15,8 @@
     "lib/routing.ts",
     "lib/discovery.ts",
     "lib/capture.ts",
-    "lib/test/**/*.ts"
+    "lib/test/**/*.ts",
+    "entrypoints/review.content/card-state.ts"
   ],
   "exclude": [
     "lib/storage.ts"
