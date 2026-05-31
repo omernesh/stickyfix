@@ -30,5 +30,7 @@ export function getNextSerial(notesDir: string): number {
     .map(f => f.match(/^(\d{4})-/))
     .filter((m): m is RegExpMatchArray => m !== null)
     .map(m => parseInt(m[1], 10));
-  return (serials.length > 0 ? Math.max(...serials) : 0) + 1;
+  // IN-02: use reduce instead of spread to avoid call-stack limit on large dirs
+  const max = serials.length > 0 ? serials.reduce((a, b) => Math.max(a, b), 0) : 0;
+  return max + 1;
 }
