@@ -3,15 +3,15 @@ gsd_state_version: 1.0
 milestone: v1.0
 milestone_name: milestone
 status: executing
-stopped_at: Phase 2 Plan 1 complete
-last_updated: "2026-05-31T04:30:00.000Z"
-last_activity: 2026-05-31 -- Phase 02-01 executed (26 unit tests, 4 modules)
+stopped_at: Phase 2 Plan 2 complete
+last_updated: "2026-05-31T05:30:00.000Z"
+last_activity: 2026-05-31 -- Phase 02-02 executed (35 unit+integration tests, server.ts + index.ts + server.test.ts)
 progress:
   total_phases: 8
   completed_phases: 1
   total_plans: 6
-  completed_plans: 4
-  percent: 17
+  completed_plans: 5
+  percent: 22
 ---
 
 # Project State
@@ -26,11 +26,11 @@ See: .planning/PROJECT.md (updated 2026-05-31)
 ## Current Position
 
 Phase: 02 (Host MVP) — EXECUTING
-Plan: 2 of 3
+Plan: 3 of 3
 Status: Executing Phase 02
-Last activity: 2026-05-31 -- Phase 02-01 complete (4 tasks, 26 tests, 4 commits)
+Last activity: 2026-05-31 -- Phase 02-02 complete (3 tasks, 35 tests, 3 commits)
 
-Progress: [█░░░░░░░░░] 17%
+Progress: [██░░░░░░░░] 22%
 
 ## Performance Metrics
 
@@ -67,6 +67,8 @@ Recent decisions affecting current work:
 - [Pre-phase]: GPL clean-room hygiene (sfx-* identifiers, @medv/finder, zero upstream text) enforced from Phase 1, not a pre-release checklist
 - [02-01]: tsconfig.host.json rootDir changed from host/src to host — required to compile both host/src/**/*.ts and host/test/**/*.ts; compiled test paths use dist/host/test/ prefix
 - [02-01]: writeNote takes serial as parameter (not calling getNextSerial internally) — keeps write-note.ts testable without mutex dependency; server wires them together in 02-02
+- [02-02]: createHostServer does not call listen — factory stays testable with ephemeral port 0 in integration tests
+- [02-02]: setCorsHeaders called first in every handler branch (before writeHead/end) — ensures 401/413/404 carry CORS headers so browser can read error bodies (Pitfall 6)
 
 ### Pending Todos
 
@@ -92,6 +94,6 @@ None yet.
 
 ## Session Continuity
 
-Last session: 2026-05-31T04:30:00.000Z
-Stopped at: Phase 02-01 complete
-Resume file: .planning/phases/02-host-mvp/02-02-PLAN.md
+Last session: 2026-05-31T05:30:00.000Z
+Stopped at: Phase 02-02 complete
+Resume file: .planning/phases/02-host-mvp/02-03-PLAN.md
