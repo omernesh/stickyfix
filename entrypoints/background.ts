@@ -16,12 +16,13 @@
  *  - The relay is the only localhost path; content-script fetch is forbidden.
  */
 
-import { SFX_MSG, SFX_SET_ROUTE, SFX_GET_TAB_ID } from '../lib/types.js';
+import { SFX_MSG, SFX_SET_ROUTE, SFX_GET_TAB_ID, SFX_CAPTURE_TAB } from '../lib/types.js';
 import type {
   SfxMessage,
   SfxResponse,
   HostEntry,
   AnnotationPayload,
+  MsgCaptureTab,
 } from '../lib/types.js';
 import {
   sfxRegistry,
@@ -354,6 +355,31 @@ async function handleSendAnnotation(
 }
 
 // ---------------------------------------------------------------------------
+// handleCaptureTab — SW-side handler for SFX_CAPTURE_TAB (Plan 04-03)
+// ---------------------------------------------------------------------------
+
+/**
+ * Captures the visible viewport of the tab identified by `tabId`.
+ *
+ * SECURITY (T-04-07 / T-04-09 / INVARIANT B):
+ *  - This is the ONLY caller of chrome.tabs.captureVisibleTab in the codebase.
+ *  - windowId is derived from chrome.tabs.get(tabId) — NEVER trusted from the
+ *    message body (anti-spoof, Pitfall 8).
+ */
+async function handleCaptureTab(
+  tabId: number
+): Promise<{ ok: true; dataUrl: string } | { ok: false; error: string }> {
+  try {
+    const tab = await chrome.tabs.get(tabId);
+    if (!tab.windowId) return { ok: false, error: 'No windowId for tab' };
+    const dataUrl = await chrome.tabs.captureVisibleTab(tab.windowId, { format: 'png' });
+    return { ok: true, dataUrl };
+  } catch (e: unknown) {
+    return { ok: false, error: String(e) };
+  }
+}
+
+// ---------------------------------------------------------------------------
 // Message protocol — SFX_SET_ROUTE (added in Plan 03-02) and SFX_GET_TAB_ID
 // ---------------------------------------------------------------------------
 
@@ -391,7 +417,7 @@ interface MsgGetTabId {
  */
 chrome.runtime.onMessage.addListener(
   (
-    msg: SfxMessage | MsgSetRoute | MsgGetTabId,
+    msg: SfxMessage | MsgSetRoute | MsgGetTabId | MsgCaptureTab,
     sender: chrome.runtime.MessageSender,
     sendResponse: (response: unknown) => void
   ): true | void => {
@@ -447,6 +473,14 @@ chrome.runtime.onMessage.addListener(
             sendResponse({ ok: false, error: String(err) })
           );
         return true;
+
+      case SFX_CAPTURE_TAB:
+        handleCaptureTab((msg as MsgCaptureTab).tabId)
+          .then(sendResponse)
+          .catch((err: unknown) =>
+            sendResponse({ ok: false, error: String(err) })
+          );
+        return true; // MANDATORY — captureVisibleTab is async (Pitfall 1)
 
       default:
         // Unknown message type — do not return true (no async response)
