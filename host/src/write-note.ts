@@ -27,9 +27,13 @@ export function localTimestamp(): string {
     `${pad(d.getHours())}${pad(d.getMinutes())}${pad(d.getSeconds())}`;
 }
 
+// 8-byte PNG file signature (ISO 15948 §12.1)
+const PNG_SIGNATURE = Buffer.from([0x89, 0x50, 0x4e, 0x47, 0x0d, 0x0a, 0x1a, 0x0a]);
+
 /**
- * Validate the data:image/png;base64, prefix and decode to a Buffer (Pattern 7).
- * Throws an error with statusCode 400 if the prefix is wrong.
+ * Validate the data:image/png;base64, prefix, decode to a Buffer, and assert
+ * the 8-byte PNG magic signature (WR-04). Throws {statusCode:400} on any failure
+ * (wrong prefix, zero-length buffer, bad magic bytes).
  */
 export function decodePngDataUrl(dataUrl: string): Buffer {
   if (!dataUrl.startsWith(PNG_PREFIX)) {
@@ -38,7 +42,21 @@ export function decodePngDataUrl(dataUrl: string): Buffer {
       { statusCode: 400 }
     );
   }
-  return Buffer.from(dataUrl.slice(PNG_PREFIX.length), 'base64');
+  const buf = Buffer.from(dataUrl.slice(PNG_PREFIX.length), 'base64');
+  // WR-04: reject zero-length buffers and non-PNG magic bytes
+  if (buf.length < PNG_SIGNATURE.length) {
+    throw Object.assign(
+      new Error('Invalid screenshot: decoded buffer is too small to be a PNG'),
+      { statusCode: 400 }
+    );
+  }
+  if (!buf.subarray(0, PNG_SIGNATURE.length).equals(PNG_SIGNATURE)) {
+    throw Object.assign(
+      new Error('Invalid screenshot: PNG magic bytes not found'),
+      { statusCode: 400 }
+    );
+  }
+  return buf;
 }
 
 // ---------------------------------------------------------------------------

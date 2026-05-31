@@ -179,4 +179,28 @@ describe('decodePngDataUrl', () => {
     assert.ok(Buffer.isBuffer(result), 'should return a Buffer');
     assert.ok(result.length > 0, 'buffer should be non-empty');
   });
+
+  // WR-04: PNG magic-byte validation
+  test('WR-04: throws statusCode 400 for correct prefix but wrong magic bytes (not a real PNG)', () => {
+    // base64-encode "NOTAPNG" — has the right prefix but wrong magic bytes
+    const fakeB64 = Buffer.from('NOTAPNG1234567890').toString('base64');
+    assert.throws(
+      () => decodePngDataUrl(`data:image/png;base64,${fakeB64}`),
+      (err: any) => {
+        assert.strictEqual(err.statusCode, 400);
+        assert.ok(err.message.includes('magic bytes') || err.message.includes('PNG'), `unexpected message: ${err.message}`);
+        return true;
+      }
+    );
+  });
+
+  test('WR-04: throws statusCode 400 for zero-length decoded buffer (empty base64 payload)', () => {
+    assert.throws(
+      () => decodePngDataUrl('data:image/png;base64,'),
+      (err: any) => {
+        assert.strictEqual(err.statusCode, 400);
+        return true;
+      }
+    );
+  });
 });
