@@ -85,9 +85,6 @@ export function mountChip(container: HTMLElement, unmountFn: () => void): void {
   chip.id = 'sfx-chip';
   container.appendChild(chip);
 
-  // Make the chip draggable immediately (position is set inside makeDraggable)
-  makeDraggable(chip);
-
   // Status dot
   const dot = document.createElement('span');
   dot.className = 'sfx-status-dot';
@@ -118,6 +115,10 @@ export function mountChip(container: HTMLElement, unmountFn: () => void): void {
   exitBtn.textContent = '×';
   exitBtn.setAttribute('aria-label', 'Exit Review Mode');
   chip.appendChild(exitBtn);
+
+  // Make the chip draggable AFTER all structural children are appended so
+  // getBoundingClientRect() reflects real content dimensions (CR-03).
+  makeDraggable(chip);
 
   // ---------------------------------------------------------------------------
   // Resolve route on mount
@@ -454,14 +455,20 @@ function makeDraggable(el: HTMLElement): void {
     const dx = e.clientX - startX;
     const dy = e.clientY - startY;
 
+    // CR-03: recompute element dimensions at every move — chip width/height can
+    // grow after label text and dropdown are injected into the chip post-mount.
+    // Guard against 0 (not-yet-laid-out) by falling back to getBoundingClientRect.
+    const w = el.offsetWidth || el.getBoundingClientRect().width || 0;
+    const h = el.offsetHeight || el.getBoundingClientRect().height || 0;
+
     // Clamp to viewport boundaries (EXT-11)
     const newLeft = Math.max(
       0,
-      Math.min(window.innerWidth - el.offsetWidth, origLeft + dx)
+      Math.min(Math.max(0, window.innerWidth - w), origLeft + dx)
     );
     const newTop = Math.max(
       0,
-      Math.min(window.innerHeight - el.offsetHeight, origTop + dy)
+      Math.min(Math.max(0, window.innerHeight - h), origTop + dy)
     );
 
     el.style.left = `${newLeft}px`;
