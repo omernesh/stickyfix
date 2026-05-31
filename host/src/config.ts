@@ -51,7 +51,14 @@ export function resolveConfig(values: Record<string, unknown>): Config {
   }
 
   const portStr = values['port'] as string | undefined;
-  const port = portStr ? Number(portStr) : undefined;
+  let port: number | undefined;
+  if (portStr !== undefined) {
+    // WR-05: validate port — Number('abc') → NaN, Number('0x10') → 16, etc.
+    port = Number(portStr);
+    if (!Number.isInteger(port) || port < 1 || port > 65535) {
+      throw new Error(`--port must be an integer 1-65535, got: ${portStr}`);
+    }
+  }
 
   // D-07 token resolution order
   const token =
