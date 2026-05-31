@@ -189,7 +189,9 @@ async function handleGetRoute(
   // Step 3: page self-id probe (EXT-08)
   let projectName: string | null = null;
   try {
-    const probeResult = await browser.scripting.executeScript({
+    // IN-05: use chrome.scripting consistently (browser.scripting is also valid
+    // for func: injections but chrome.scripting is used throughout this file).
+    const probeResult = await chrome.scripting.executeScript({
       target: { tabId },
       func: readPageSelfId,
     });
