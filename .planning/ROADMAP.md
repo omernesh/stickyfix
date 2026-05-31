@@ -99,7 +99,7 @@ Plans:
 
 **Wave 2** *(blocked on Wave 1)*
 
-- [ ] 03-02-PLAN.md — Background SW: discovery, routing, self-id probe, the single 127.0.0.1/annotation relay (SW = sole HTTP client) (EXT-04/05/06/08/09/10)
+- [x] 03-02-PLAN.md — Background SW: discovery, routing, self-id probe, the single 127.0.0.1/annotation relay (SW = sole HTTP client) (EXT-04/05/06/08/09/10)
 
 **Wave 3** *(blocked on Wave 2)*
 
@@ -195,7 +195,7 @@ Phases execute in numeric order: 1 → 2 → 3 → 4 → 5 → 6 → 7 → 8
 |-------|----------------|--------|-----------|
 | 1. Scaffold & Clean-Room Foundation | 3/3 | Complete    | 2026-05-31 |
 | 2. Host MVP | 3/3 | Complete    | 2026-05-31 |
-| 3. Extension Skeleton + SW Relay Proof | 1/4 | In Progress|  |
+| 3. Extension Skeleton + SW Relay Proof | 2/4 | In Progress|  |
 | 4. Free-Note Mode + Capture Utilities | 0/TBD | Not started | - |
 | 5. Element-Note Mode + Rich Context Capture | 0/TBD | Not started | - |
 | 6. Region Capture + Visual Design | 0/TBD | Not started | - |

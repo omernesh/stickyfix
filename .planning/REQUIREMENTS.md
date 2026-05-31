@@ -37,7 +37,7 @@ Requirements for initial release. Each maps to roadmap phases.
 - [ ] **EXT-02**: Review UI is injected dynamically via `chrome.scripting.executeScript` only on entering Review Mode (no static content_scripts)
 - [ ] **EXT-03**: Toolbar popup lists every discovered host with project name + per-host token entry/state and an Enter/Exit Review Mode toggle
 - [x] **EXT-04**: Service worker probes ports 39240–39260 and builds a registry of all live hosts from `/status`
-- [ ] **EXT-05**: All localhost fetches route through the service worker (not the content script) to satisfy Chrome LNA/CORS
+- [x] **EXT-05**: All localhost fetches route through the service worker (not the content script) to satisfy Chrome LNA/CORS
 - [x] **EXT-06**: Each note routes by the active tab's origin to the advertising host with zero per-note picks
 - [x] **EXT-07**: Unknown origin prompts a one-time host dropdown; the `origin → host` mapping persists and is never re-asked
 - [x] **EXT-08**: Same-origin clashes are resolved by page self-id (`<meta name="stickyfix-project">` / `window.__stickyfix_project`) preferred over the origin map
@@ -153,7 +153,7 @@ Which phases cover which requirements. Updated during roadmap creation.
 | EXT-02 | Phase 3 | Pending |
 | EXT-03 | Phase 3 | Pending |
 | EXT-04 | Phase 3 | Complete |
-| EXT-05 | Phase 3 | Pending |
+| EXT-05 | Phase 3 | Complete |
 | EXT-06 | Phase 3 | Complete |
 | EXT-07 | Phase 3 | Complete |
 | EXT-08 | Phase 3 | Complete |
