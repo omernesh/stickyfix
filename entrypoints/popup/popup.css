@@ -128,6 +128,52 @@ body {
   background: #fff;
 }
 
+/* Token field wrapper + Apply/Clear actions */
+.sfx-token-wrap {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  align-items: stretch;
+}
+
+.sfx-token-actions {
+  display: flex;
+  gap: 4px;
+  justify-content: flex-end;
+}
+
+.sfx-token-btn {
+  font-size: 10px;
+  padding: 2px 8px;
+  border: 1px solid #d0d0d0;
+  border-radius: 4px;
+  background: #f5f5f5;
+  color: #333;
+  cursor: pointer;
+  line-height: 1.4;
+}
+
+.sfx-token-btn:hover {
+  background: #ebebeb;
+}
+
+.sfx-token-btn:disabled {
+  cursor: default;
+  color: #16a34a;
+  border-color: #16a34a;
+  background: #f0fdf4;
+}
+
+.sfx-token-apply {
+  font-weight: 600;
+}
+
+.sfx-token-clear:hover {
+  color: #b91c1c;
+  border-color: #f0b4b4;
+  background: #fef2f2;
+}
+
 /* ── Empty state ──────────────────────────────────────────────────────────── */
 
 #sfx-empty-state {

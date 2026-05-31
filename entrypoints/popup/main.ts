@@ -114,30 +114,76 @@ function renderHosts(
     tokenInput.autocomplete = 'off';
     tokenInput.setAttribute('aria-label', name + ' token');
 
-    // Persist on blur or Enter key
-    async function persistToken() {
+    // Persist the current input value to storage.local (EXT-09).
+    // `silent` skips the re-render so we can keep focus / show inline confirm.
+    async function persistToken(silent = false): Promise<void> {
       const allTokens = await sfxTokens.getValue();
       allTokens[host.name] = tokenInput.value;
       await sfxTokens.setValue(allTokens);
-      // Update summary if needed
-      const allRegistry = await sfxRegistry.getValue();
-      const allTokensNow = await sfxTokens.getValue();
-      renderHosts(allRegistry, allTokensNow);
+      if (!silent) {
+        const [allRegistry, allTokensNow] = await Promise.all([
+          sfxRegistry.getValue(),
+          sfxTokens.getValue(),
+        ]);
+        renderHosts(allRegistry, allTokensNow);
+      }
     }
 
-    tokenInput.addEventListener('blur', persistToken);
+    // Apply / Clear actions next to the token field
+    const applyBtn = el('button');
+    applyBtn.type = 'button';
+    applyBtn.className = 'sfx-token-btn sfx-token-apply';
+    applyBtn.textContent = 'Apply';
+    applyBtn.title = 'Save this token';
+
+    const clearBtn = el('button');
+    clearBtn.type = 'button';
+    clearBtn.className = 'sfx-token-btn sfx-token-clear';
+    clearBtn.textContent = 'Clear';
+    clearBtn.title = 'Clear the saved token';
+
+    // Apply: persist without re-render, flash a brief ✓ so it's not silent.
+    applyBtn.addEventListener('click', async () => {
+      await persistToken(true);
+      const prev = applyBtn.textContent;
+      applyBtn.textContent = '✓';
+      applyBtn.disabled = true;
+      setTimeout(() => {
+        applyBtn.textContent = prev;
+        applyBtn.disabled = false;
+      }, 900);
+    });
+
+    // Clear: empty the field and persist the removal (full re-render is fine).
+    clearBtn.addEventListener('click', async () => {
+      tokenInput.value = '';
+      await persistToken();
+    });
+
+    // Persist on blur or Enter key (kept — Apply is an explicit alternative)
+    tokenInput.addEventListener('blur', () => void persistToken(true));
     tokenInput.addEventListener('keydown', (e: KeyboardEvent) => {
       if (e.key === 'Enter') {
         tokenInput.blur();
       }
     });
 
-    // Row grid: [dot] [info] [token input]
+    // Right-column wrapper: [token input] over [Apply] [Clear]
+    const tokenWrap = el('div');
+    tokenWrap.className = 'sfx-token-wrap';
+    const tokenActions = el('div');
+    tokenActions.className = 'sfx-token-actions';
+    tokenActions.appendChild(applyBtn);
+    tokenActions.appendChild(clearBtn);
+    tokenWrap.appendChild(tokenInput);
+    tokenWrap.appendChild(tokenActions);
+
+    // Row grid: [dot] [info] [token wrap]
     const row = el('div');
     row.className = 'sfx-host-row';
     row.appendChild(dot);
     row.appendChild(infoBlock);
-    row.appendChild(tokenInput);
+    row.appendChild(tokenWrap);
 
     hostListEl.appendChild(row);
   }
