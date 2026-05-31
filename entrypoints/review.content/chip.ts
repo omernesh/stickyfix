@@ -41,7 +41,8 @@ type RouteResponse = RouteOkResponse | RouteErrResponse;
 interface AnnotationOkResponse {
   ok: true;
   file: string;
-  serial: number;
+  /** zero-padded string serial from the host (e.g. "0001") */
+  serial: string;
 }
 
 interface AnnotationErrResponse {

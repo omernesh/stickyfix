@@ -43,7 +43,9 @@ type RouteResponse =
 
 type AnnotationResponse = SfxResponse<{
   file: string;
-  serial: number;
+  // The host returns the zero-padded serial as a STRING (e.g. "0001") — this is
+  // its documented contract (server.test.ts asserts typeof serial === 'string').
+  serial: string;
 }>;
 
 type EnterReviewResponse = SfxResponse<{ route: HostEntry | null }>;
@@ -325,15 +327,15 @@ async function handleSendAnnotation(
     // A host returning 200 with a malformed body (missing file/serial) would
     // produce "sent ✓ undefined" in the chip. Normalize to {ok:false,error}
     // if the shape is wrong so the chip shows a real error instead.
-    let body: Partial<AnnotationResponse & { ok: true; file: string; serial: number }>;
+    let body: Partial<AnnotationResponse & { ok: true; file: string; serial: string }>;
     try {
       body = (await resp.json()) as typeof body;
     } catch {
       return { ok: false, error: 'Host returned non-JSON on 200' };
     }
     if (typeof (body as { file?: unknown }).file === 'string' &&
-        typeof (body as { serial?: unknown }).serial === 'number') {
-      return { ok: true, file: (body as { file: string }).file, serial: (body as { serial: number }).serial };
+        typeof (body as { serial?: unknown }).serial === 'string') {
+      return { ok: true, file: (body as { file: string }).file, serial: (body as { serial: string }).serial };
     }
     return { ok: false, error: 'Malformed host response (missing file/serial)' };
   }
