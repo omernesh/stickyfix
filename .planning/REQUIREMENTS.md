@@ -9,9 +9,9 @@ Requirements for initial release. Each maps to roadmap phases.
 
 ### Scaffold & Build (BUILD)
 
-- [ ] **BUILD-01**: `npm run build` succeeds on Windows with no macOS-only steps (no `sips`, no Bun)
-- [ ] **BUILD-02**: WXT scaffold produces a loadable (empty-but-valid) MV3 extension via Vite
-- [ ] **BUILD-03**: Extension icons (16/32/48/128) ship as committed pre-sized PNGs (no `sharp`/auto-icons native dep)
+- [x] **BUILD-01**: `npm run build` succeeds on Windows with no macOS-only steps (no `sips`, no Bun)
+- [x] **BUILD-02**: WXT scaffold produces a loadable (empty-but-valid) MV3 extension via Vite
+- [x] **BUILD-03**: Extension icons (16/32/48/128) ship as committed pre-sized PNGs (no `sharp`/auto-icons native dep)
 - [ ] **BUILD-04**: Repo is public, MIT-licensed, with no GPL code present (clean-room §13 honored; `sfx-*` identifier namespace from M1)
 - [ ] **BUILD-05**: `npm run check` runs `tsc --noEmit` plus a host smoke test
 
@@ -131,9 +131,9 @@ Which phases cover which requirements. Updated during roadmap creation.
 
 | Requirement | Phase | Status |
 |-------------|-------|--------|
-| BUILD-01 | Phase 1 | Pending |
-| BUILD-02 | Phase 1 | Pending |
-| BUILD-03 | Phase 1 | Pending |
+| BUILD-01 | Phase 1 | Complete |
+| BUILD-02 | Phase 1 | Complete |
+| BUILD-03 | Phase 1 | Complete |
 | BUILD-04 | Phase 1 | Pending |
 | BUILD-05 | Phase 1 | Pending |
 | HOST-01 | Phase 2 | Pending |
@@ -195,6 +195,7 @@ Which phases cover which requirements. Updated during roadmap creation.
 | DOC-02 | Phase 7 | Pending |
 
 **Coverage:**
+
 - v1 requirements: 62 total (BUILD×5 + HOST×13 + EXT×11 + FREE×4 + ELEM×9 + CAM×6 + UI×4 + REL×3 + SKILL×5 + DOC×2)
 - Mapped to phases: 62
 - Unmapped: 0 ✓
