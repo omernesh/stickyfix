@@ -166,14 +166,19 @@ async function handleExitReview(tabId: number): Promise<ExitReviewResponse> {
 
 async function handleGetRoute(
   tabId: number,
-  originFromMsg: string
+  _originFromMsg: string  // IN-02: kept for API compat; tab.url is always used
 ): Promise<RouteResponse> {
   // Re-read storage at handler top (Pitfall 1)
   const state = await loadStorageState();
 
-  // Derive origin from the tab URL — not the message (T-03-01)
+  // Derive origin from the tab URL — not the message (T-03-01).
+  // IN-02: if tab.url is missing (discarded/loading tab), return an error
+  // rather than falling back to the page-supplied originFromMsg.
   const tab = await chrome.tabs.get(tabId);
-  const origin = tab.url ? new URL(tab.url).origin : originFromMsg;
+  if (!tab.url) {
+    return { ok: false, error: 'Cannot determine tab origin (tab has no URL)' };
+  }
+  const origin = new URL(tab.url).origin;
 
   // Step 1 + 2: advertised or persisted mapping
   let route = resolveRoute(origin, state);
@@ -188,7 +193,12 @@ async function handleGetRoute(
       target: { tabId },
       func: readPageSelfId,
     });
-    projectName = (probeResult[0]?.result as string) ?? null;
+    // WR-06: validate result before using as a storage key — the page controls
+    // window.__stickyfix_project and could supply a non-string or large value.
+    const raw = probeResult[0]?.result;
+    projectName = (typeof raw === 'string' && raw.length > 0 && raw.length < 128)
+      ? raw
+      : null;
   } catch {
     // Page may not allow scripting — not an error
   }
@@ -457,6 +467,9 @@ export default defineBackground({
     // and chrome.runtime.onStartup/onInstalled.
     // This main() body is intentionally minimal — WXT requires it for entrypoint
     // detection but execution happens in the top-level registrations above.
-    console.log('stickyfix SW loaded');
+    // IN-01: gate debug log behind DEV flag to avoid noise in production
+    if (import.meta.env.DEV) {
+      console.log('stickyfix SW loaded');
+    }
   },
 });
