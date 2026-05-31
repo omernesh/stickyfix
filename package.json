@@ -8,7 +8,7 @@
     "dev": "wxt",
     "build": "wxt build && tsc -p tsconfig.host.json",
     "host": "node dist/host/src/index.js",
-    "test": "tsc -p tsconfig.host.json && node --test dist/host/test/serial.test.js dist/host/test/security.test.js dist/host/test/write-note.test.js dist/host/test/server.test.js dist/host/test/config.test.js",
+    "test": "tsc -p tsconfig.host.json && node --test dist/host/test/serial.test.js dist/host/test/security.test.js dist/host/test/write-note.test.js dist/host/test/server.test.js dist/host/test/config.test.js dist/host/test/index.test.js",
     "check": "tsc --noEmit && tsc --noEmit -p tsconfig.host.json && node scripts/clean-room-check.mjs && node scripts/host-smoke-test.mjs && npm test",
     "postinstall": "wxt prepare"
   },
