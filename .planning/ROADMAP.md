@@ -167,7 +167,7 @@ Phases execute in numeric order: 1 → 2 → 3 → 4 → 5 → 6 → 7 → 8
 
 | Phase | Plans Complete | Status | Completed |
 |-------|----------------|--------|-----------|
-| 1. Scaffold & Clean-Room Foundation | 3/3 | Complete   | 2026-05-31 |
+| 1. Scaffold & Clean-Room Foundation | 3/3 | Complete    | 2026-05-31 |
 | 2. Host MVP | 0/TBD | Not started | - |
 | 3. Extension Skeleton + SW Relay Proof | 0/TBD | Not started | - |
 | 4. Free-Note Mode + Capture Utilities | 0/TBD | Not started | - |
