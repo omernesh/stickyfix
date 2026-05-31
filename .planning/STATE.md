@@ -2,16 +2,16 @@
 gsd_state_version: 1.0
 milestone: v1.0
 milestone_name: milestone
-status: executing
-stopped_at: Phase 2 Plan 2 complete
-last_updated: "2026-05-31T05:30:00.000Z"
-last_activity: 2026-05-31 -- Phase 02-02 executed (35 unit+integration tests, server.ts + index.ts + server.test.ts)
+status: verifying
+stopped_at: Phase 02-03 complete — npm run check green, all phase gates passed
+last_updated: "2026-05-31T03:29:16.308Z"
+last_activity: 2026-05-31
 progress:
   total_phases: 8
-  completed_phases: 1
+  completed_phases: 2
   total_plans: 6
-  completed_plans: 5
-  percent: 22
+  completed_plans: 6
+  percent: 25
 ---
 
 # Project State
@@ -27,8 +27,8 @@ See: .planning/PROJECT.md (updated 2026-05-31)
 
 Phase: 02 (Host MVP) — EXECUTING
 Plan: 3 of 3
-Status: Executing Phase 02
-Last activity: 2026-05-31 -- Phase 02-02 complete (3 tasks, 35 tests, 3 commits)
+Status: Phase complete — ready for verification
+Last activity: 2026-05-31
 
 Progress: [██░░░░░░░░] 22%
 
@@ -54,6 +54,7 @@ Progress: [██░░░░░░░░] 22%
 *Updated after each plan completion*
 | Phase 01-scaffold-clean-room-foundation P01 | 7 | 3 tasks | 11 files |
 | Phase 01-scaffold-clean-room-foundation P03 | 6 | 2 tasks | 1 files |
+| Phase 02 P03 | 10 minutes | 2 tasks | 1 files |
 
 ## Accumulated Context
 
@@ -69,6 +70,8 @@ Recent decisions affecting current work:
 - [02-01]: writeNote takes serial as parameter (not calling getNextSerial internally) — keeps write-note.ts testable without mutex dependency; server wires them together in 02-02
 - [02-02]: createHostServer does not call listen — factory stays testable with ephemeral port 0 in integration tests
 - [02-02]: setCorsHeaders called first in every handler branch (before writeHead/end) — ensures 401/413/404 carry CORS headers so browser can read error bodies (Pitfall 6)
+- [Phase ?]: body.file from POST /annotation is absolute path (writeNote returns mdPath directly) — use existsSync(body.file) without notesDir join
+- [Phase ?]: smoke test asserts port in 39240-39260, 401 no-token, token POST + .md-on-disk — full end-to-end HOST-01-05 coverage
 
 ### Pending Todos
 
@@ -94,6 +97,6 @@ None yet.
 
 ## Session Continuity
 
-Last session: 2026-05-31T05:30:00.000Z
-Stopped at: Phase 02-02 complete
-Resume file: .planning/phases/02-host-mvp/02-03-PLAN.md
+Last session: 2026-05-31T03:29:16.300Z
+Stopped at: Phase 02-03 complete — npm run check green, all phase gates passed
+Resume file: None

@@ -14,7 +14,7 @@ Eight phases deliver a Chrome MV3 extension + localhost host that turns on-page 
 Decimal phases appear between their surrounding integers in numeric order.
 
 - [x] **Phase 1: Scaffold & Clean-Room Foundation** - Cross-platform WXT + host build succeeds; sfx-* identifier namespace established; no GPL artifacts (completed 2026-05-31)
-- [ ] **Phase 2: Host MVP** - stickyfix-host writes .md + .png files with serial mutex, token auth, path safety, and CORS
+- [x] **Phase 2: Host MVP** - stickyfix-host writes .md + .png files with serial mutex, token auth, path safety, and CORS (completed 2026-05-31)
 - [ ] **Phase 3: Extension Skeleton + SW Relay Proof** - Popup, host discovery, chrome.storage.local state, on-demand injection, dummy POST relay proven end-to-end
 - [ ] **Phase 4: Free-Note Mode + Capture Utilities** - Draggable FAB → post-it → Send → .md on disk; DPR crop, double-rAF flush, captureVisibleTab relay established as reusable utilities
 - [ ] **Phase 5: Element-Note Mode + Rich Context Capture** - Element picker with @medv/finder selector, React fiber, computed styles, outerHTML, auto-highlight screenshot
@@ -75,7 +75,7 @@ Plans:
 
 **Wave 3** *(blocked on Wave 2)*
 
-- [ ] 02-03-PLAN.md — Smoke-test rewrite for long-running server + full npm run check gate (HOST-01/02/03/04/05/07/08/12)
+- [x] 02-03-PLAN.md — Smoke-test rewrite for long-running server + full npm run check gate (HOST-01/02/03/04/05/07/08/12)
 
 ### Phase 3: Extension Skeleton + SW Relay Proof
 
@@ -180,7 +180,7 @@ Phases execute in numeric order: 1 → 2 → 3 → 4 → 5 → 6 → 7 → 8
 | Phase | Plans Complete | Status | Completed |
 |-------|----------------|--------|-----------|
 | 1. Scaffold & Clean-Room Foundation | 3/3 | Complete    | 2026-05-31 |
-| 2. Host MVP | 2/3 | In progress | - |
+| 2. Host MVP | 3/3 | Complete   | 2026-05-31 |
 | 3. Extension Skeleton + SW Relay Proof | 0/TBD | Not started | - |
 | 4. Free-Note Mode + Capture Utilities | 0/TBD | Not started | - |
 | 5. Element-Note Mode + Rich Context Capture | 0/TBD | Not started | - |

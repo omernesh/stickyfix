@@ -17,18 +17,18 @@ Requirements for initial release. Each maps to roadmap phases.
 
 ### Host (HOST)
 
-- [ ] **HOST-01**: Host starts via `npm run host -- --root <dir>` and prints project name, bound port, declared origins, token, and absolute notes dir
-- [ ] **HOST-02**: Host binds `127.0.0.1` only and is not reachable from another LAN host
-- [ ] **HOST-03**: Host picks a free port in range 39240–39260 (or honors `--port`)
-- [ ] **HOST-04**: `GET /status` returns `{ app: "stickyfix", version, name, root, notesDir, origins }` with no token required
-- [ ] **HOST-05**: `POST /annotation` requires a valid `X-Stickyfix-Token`; missing/wrong token returns 401
+- [x] **HOST-01**: Host starts via `npm run host -- --root <dir>` and prints project name, bound port, declared origins, token, and absolute notes dir
+- [x] **HOST-02**: Host binds `127.0.0.1` only and is not reachable from another LAN host
+- [x] **HOST-03**: Host picks a free port in range 39240–39260 (or honors `--port`)
+- [x] **HOST-04**: `GET /status` returns `{ app: "stickyfix", version, name, root, notesDir, origins }` with no token required
+- [x] **HOST-05**: `POST /annotation` requires a valid `X-Stickyfix-Token`; missing/wrong token returns 401
 - [ ] **HOST-06**: Host assigns a zero-padded running serial (`0001`) via an in-process mutex so concurrent POSTs never collide
-- [ ] **HOST-07**: Host writes `<serial>-<YYYYMMDD-HHmmss>.md` with YAML frontmatter + comment body
-- [ ] **HOST-08**: Host decodes already-cropped PNG data-URLs and writes them next to the `.md` as `<base>+<N>.png`, recording paths in frontmatter and body
+- [x] **HOST-07**: Host writes `<serial>-<YYYYMMDD-HHmmss>.md` with YAML frontmatter + comment body
+- [x] **HOST-08**: Host decodes already-cropped PNG data-URLs and writes them next to the `.md` as `<base>+<N>.png`, recording paths in frontmatter and body
 - [ ] **HOST-09**: Writes are confined inside `--root`; path traversal is rejected; `--notes-dir` must resolve inside `--root`
 - [ ] **HOST-10**: CORS echoes the request `Origin` and allows the `X-Stickyfix-Token` header for `POST`/`OPTIONS`
 - [ ] **HOST-11**: Body size cap of 12 MB; larger payloads rejected with 413
-- [ ] **HOST-12**: Notes dir is created if missing with a `.gitkeep`; token also written to gitignored `<root>/.stickyfix-token`
+- [x] **HOST-12**: Notes dir is created if missing with a `.gitkeep`; token also written to gitignored `<root>/.stickyfix-token`
 - [ ] **HOST-13**: Host accepts `--origin` (repeatable), `--name`, `--notes-dir`, `--token` (else `STICKYFIX_TOKEN` env, else random UUID) via `util.parseArgs`
 
 ### Extension Shell & Routing (EXT)
@@ -136,18 +136,18 @@ Which phases cover which requirements. Updated during roadmap creation.
 | BUILD-03 | Phase 1 | Complete |
 | BUILD-04 | Phase 1 | Complete |
 | BUILD-05 | Phase 1 | Complete |
-| HOST-01 | Phase 2 | Pending |
-| HOST-02 | Phase 2 | Pending |
-| HOST-03 | Phase 2 | Pending |
-| HOST-04 | Phase 2 | Pending |
-| HOST-05 | Phase 2 | Pending |
+| HOST-01 | Phase 2 | Complete |
+| HOST-02 | Phase 2 | Complete |
+| HOST-03 | Phase 2 | Complete |
+| HOST-04 | Phase 2 | Complete |
+| HOST-05 | Phase 2 | Complete |
 | HOST-06 | Phase 2 | Pending |
-| HOST-07 | Phase 2 | Pending |
-| HOST-08 | Phase 2 | Pending |
+| HOST-07 | Phase 2 | Complete |
+| HOST-08 | Phase 2 | Complete |
 | HOST-09 | Phase 2 | Pending |
 | HOST-10 | Phase 2 | Pending |
 | HOST-11 | Phase 2 | Pending |
-| HOST-12 | Phase 2 | Pending |
+| HOST-12 | Phase 2 | Complete |
 | HOST-13 | Phase 2 | Pending |
 | EXT-01 | Phase 3 | Pending |
 | EXT-02 | Phase 3 | Pending |
