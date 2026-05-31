@@ -34,7 +34,11 @@ Decimal phases appear between their surrounding integers in numeric order.
   3. `npm run check` runs tsc --noEmit and a host smoke test and exits 0
   4. Pre-sized PNG icons (16/32/48/128) are committed to public/ and appear in the loaded extension
   5. A grep for `__opc_`, `opencode`, `JodusNodus` returns zero results; all project identifiers use the sfx-* namespace
-**Plans**: TBD
+**Plans**: 3 plans
+Plans:
+- [ ] 01-01-PLAN.md — Extension scaffold: package.json + deps, wxt.config.ts, tsconfig, entrypoints, pre-sized PNG icons (BUILD-01/02/03)
+- [ ] 01-02-PLAN.md — Host stub: tsconfig.host.json, parseArgs CLI stub, spawn-and-assert smoke test (BUILD-05)
+- [ ] 01-03-PLAN.md — Clean-room grep gate + .gitignore finalize + full `npm run check`/`build` verification (BUILD-01/04/05)
 
 ### Phase 2: Host MVP
 **Goal**: Running `npm run host -- --root <dir>` starts a server on 127.0.0.1 that accepts POST /annotation with token auth, assigns serials via a mutex, and writes .md + .png files safely inside --root.
@@ -133,7 +137,7 @@ Phases execute in numeric order: 1 → 2 → 3 → 4 → 5 → 6 → 7 → 8
 
 | Phase | Plans Complete | Status | Completed |
 |-------|----------------|--------|-----------|
-| 1. Scaffold & Clean-Room Foundation | 0/TBD | Not started | - |
+| 1. Scaffold & Clean-Room Foundation | 0/3 | Planned | - |
 | 2. Host MVP | 0/TBD | Not started | - |
 | 3. Extension Skeleton + SW Relay Proof | 0/TBD | Not started | - |
 | 4. Free-Note Mode + Capture Utilities | 0/TBD | Not started | - |
