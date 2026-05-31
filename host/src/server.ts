@@ -109,8 +109,12 @@ async function handleAnnotation(
     res.writeHead(200, { 'Content-Type': 'application/json' });
     res.end(JSON.stringify({ ok: true, file, serial }));
   } catch (e: unknown) {
-    const err = e as { message?: string };
-    res.writeHead(500, { 'Content-Type': 'application/json' });
+    // CR-02: propagate statusCode from write-phase errors (e.g. bad screenshot → 400)
+    const err = e as { statusCode?: number; message?: string };
+    const status = (typeof err.statusCode === 'number' && err.statusCode >= 400 && err.statusCode < 600)
+      ? err.statusCode
+      : 500;
+    res.writeHead(status, { 'Content-Type': 'application/json' });
     res.end(JSON.stringify({ ok: false, error: err.message ?? 'internal error' }));
   }
 }

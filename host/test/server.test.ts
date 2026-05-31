@@ -244,4 +244,45 @@ describe('stickyfix-host server integration', () => {
     const body = await res.json() as { ok: boolean };
     assert.equal(body.ok, false);
   });
+
+  // -------------------------------------------------------------------------
+  // CR-02 regression: bad screenshot dataUrl → 400, NO partial on-disk state
+  // -------------------------------------------------------------------------
+  it('CR-02: POST /annotation with non-PNG screenshot dataUrl returns 400 and leaves no .md or .png on disk', async () => {
+    const { readdirSync } = await import('node:fs');
+
+    // Snapshot files already in notesDir before the request
+    const beforeFiles = readdirSync(fixture.cfg.notesDir);
+
+    const res = await fetch(`${fixture.baseUrl}/annotation`, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        'X-Stickyfix-Token': TEST_TOKEN,
+      },
+      body: JSON.stringify({
+        mode: 'free',
+        comment: 'bad screenshot test',
+        page: { url: 'http://localhost:5173/', title: 'Test' },
+        viewport: { width: 1280, height: 800, devicePixelRatio: 1 },
+        screenshots: [
+          // dataUrl lacks the data:image/png;base64, prefix → should fail with 400
+          { kind: 'page', mime: 'image/png', dataUrl: 'data:image/jpeg;base64,/9j/abc123' },
+        ],
+      }),
+    });
+
+    // Must be 400, not 500
+    assert.equal(res.status, 400);
+    const body = await res.json() as { ok: boolean };
+    assert.equal(body.ok, false);
+
+    // No new files must have been written to notesDir
+    const afterFiles = readdirSync(fixture.cfg.notesDir);
+    assert.deepEqual(
+      afterFiles.sort(),
+      beforeFiles.sort(),
+      'No files should be created in notesDir on a bad-screenshot request (CR-02)'
+    );
+  });
 });

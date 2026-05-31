@@ -147,20 +147,23 @@ export async function writeNote(
   const base = `${padded}-${ts}`;
   const mdPath = join(notesDir, `${base}.md`);
 
+  // CR-02: Decode/validate ALL screenshots into buffers BEFORE touching disk.
+  // A bad dataUrl throws {statusCode:400} here — before any file is written —
+  // so there is no partial on-disk state (no orphaned .md, no burned serial).
+  const pngBuffers = (payload.screenshots ?? []).map(s => decodePngDataUrl(s.dataUrl));
+
   // Collect relative screenshot filenames for frontmatter
-  const screenshotRelPaths = (payload.screenshots ?? []).map((_, i) => `${base}+${i + 1}.png`);
+  const screenshotRelPaths = pngBuffers.map((_, i) => `${base}+${i + 1}.png`);
 
   // Build and write the .md file
   const frontmatter = buildFrontmatter(base, payload, serial, screenshotRelPaths);
   const body = buildNoteBody(base, payload);
   await writeFile(mdPath, frontmatter + body, 'utf8');
 
-  // Decode and write each PNG next to the .md
-  for (let i = 0; i < (payload.screenshots ?? []).length; i++) {
-    const screenshot = payload.screenshots![i];
-    const pngBuf = decodePngDataUrl(screenshot.dataUrl);
+  // Write each decoded PNG buffer next to the .md
+  for (let i = 0; i < pngBuffers.length; i++) {
     const pngPath = join(notesDir, `${base}+${i + 1}.png`);
-    await writeFile(pngPath, pngBuf);
+    await writeFile(pngPath, pngBuffers[i]);
   }
 
   return { file: mdPath, serial: padded };
