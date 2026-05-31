@@ -1,7 +1,10 @@
 ---
 phase: 03-extension-skeleton-sw-relay-proof
 verified: 2026-05-31T00:00:00Z
-status: human_needed
+status: passed
+human_verified: 2026-05-31
+human_verified_by: Omer
+human_uat_result: "PASS — relay proof (EXT-05) confirmed; notes/0001,0002-*.md written, chip 'sent OK'. 5 UAT bugs fixed. See 03-HUMAN-UAT.md."
 score: 10/10 must-haves verified (automated surface)
 overrides_applied: 0
 human_verification:
