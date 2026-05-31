@@ -35,7 +35,7 @@ Requirements for initial release. Each maps to roadmap phases.
 
 - [x] **EXT-01**: MV3 manifest with `activeTab`, `scripting`, `storage`, `tabs` permissions; localhost host_permissions; `optional_host_permissions` requested on demand
 - [ ] **EXT-02**: Review UI is injected dynamically via `chrome.scripting.executeScript` only on entering Review Mode (no static content_scripts)
-- [ ] **EXT-03**: Toolbar popup lists every discovered host with project name + per-host token entry/state and an Enter/Exit Review Mode toggle
+- [x] **EXT-03**: Toolbar popup lists every discovered host with project name + per-host token entry/state and an Enter/Exit Review Mode toggle
 - [x] **EXT-04**: Service worker probes ports 39240–39260 and builds a registry of all live hosts from `/status`
 - [x] **EXT-05**: All localhost fetches route through the service worker (not the content script) to satisfy Chrome LNA/CORS
 - [x] **EXT-06**: Each note routes by the active tab's origin to the advertising host with zero per-note picks
@@ -151,7 +151,7 @@ Which phases cover which requirements. Updated during roadmap creation.
 | HOST-13 | Phase 2 | Complete |
 | EXT-01 | Phase 3 | Complete |
 | EXT-02 | Phase 3 | Pending |
-| EXT-03 | Phase 3 | Pending |
+| EXT-03 | Phase 3 | Complete |
 | EXT-04 | Phase 3 | Complete |
 | EXT-05 | Phase 3 | Complete |
 | EXT-06 | Phase 3 | Complete |

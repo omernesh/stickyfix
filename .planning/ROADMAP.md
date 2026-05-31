@@ -103,7 +103,7 @@ Plans:
 
 **Wave 3** *(blocked on Wave 2)*
 
-- [ ] 03-03-PLAN.md — Popup: discovered-host list + per-host token persistence + Review Mode toggle with the permission gesture (EXT-03/07/09)
+- [x] 03-03-PLAN.md — Popup: discovered-host list + per-host token persistence + Review Mode toggle with the permission gesture (EXT-03/07/09)
 - [ ] 03-04-PLAN.md — review.content chip: runtime injection + shadow-root createShadowRootUi, draggable+clamped, one-time dropdown, stub Send relay proof (EXT-02/05/07/08/11)
 
 **UI hint**: yes
@@ -195,7 +195,7 @@ Phases execute in numeric order: 1 → 2 → 3 → 4 → 5 → 6 → 7 → 8
 |-------|----------------|--------|-----------|
 | 1. Scaffold & Clean-Room Foundation | 3/3 | Complete    | 2026-05-31 |
 | 2. Host MVP | 3/3 | Complete    | 2026-05-31 |
-| 3. Extension Skeleton + SW Relay Proof | 2/4 | In Progress|  |
+| 3. Extension Skeleton + SW Relay Proof | 3/4 | In Progress|  |
 | 4. Free-Note Mode + Capture Utilities | 0/TBD | Not started | - |
 | 5. Element-Note Mode + Rich Context Capture | 0/TBD | Not started | - |
 | 6. Region Capture + Visual Design | 0/TBD | Not started | - |
