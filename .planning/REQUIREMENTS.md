@@ -13,7 +13,7 @@ Requirements for initial release. Each maps to roadmap phases.
 - [x] **BUILD-02**: WXT scaffold produces a loadable (empty-but-valid) MV3 extension via Vite
 - [x] **BUILD-03**: Extension icons (16/32/48/128) ship as committed pre-sized PNGs (no `sharp`/auto-icons native dep)
 - [ ] **BUILD-04**: Repo is public, MIT-licensed, with no GPL code present (clean-room §13 honored; `sfx-*` identifier namespace from M1)
-- [ ] **BUILD-05**: `npm run check` runs `tsc --noEmit` plus a host smoke test
+- [x] **BUILD-05**: `npm run check` runs `tsc --noEmit` plus a host smoke test
 
 ### Host (HOST)
 
@@ -135,7 +135,7 @@ Which phases cover which requirements. Updated during roadmap creation.
 | BUILD-02 | Phase 1 | Complete |
 | BUILD-03 | Phase 1 | Complete |
 | BUILD-04 | Phase 1 | Pending |
-| BUILD-05 | Phase 1 | Pending |
+| BUILD-05 | Phase 1 | Complete |
 | HOST-01 | Phase 2 | Pending |
 | HOST-02 | Phase 2 | Pending |
 | HOST-03 | Phase 2 | Pending |
