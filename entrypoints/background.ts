@@ -151,15 +151,12 @@ async function handleExitReview(tabId: number): Promise<ExitReviewResponse> {
   delete prefs.reviewMode[String(tabId)];
   await sfxPrefs.setValue(prefs);
 
-  // Ask the content script to unmount (best-effort — ctx.onInvalidated is the
-  // safety net if the CS is already gone or the tab was closed)
+  // Ask the content script to unmount via a direct runtime message (best-effort).
+  // WR-07: using chrome.tabs.sendMessage (same-world, extension-only channel)
+  // instead of injecting a page CustomEvent which any page script can forge/suppress.
+  // ctx.onInvalidated in the CS is the safety net if the CS is already gone.
   try {
-    await browser.scripting.executeScript({
-      target: { tabId },
-      func: () => {
-        window.dispatchEvent(new CustomEvent('sfx-exit-review'));
-      },
-    });
+    await chrome.tabs.sendMessage(tabId, { type: SFX_MSG.EXIT_REVIEW, tabId });
   } catch {
     // Tab may have been closed or CS not injected — not an error
   }

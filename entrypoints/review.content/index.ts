@@ -12,6 +12,7 @@
 import './styles.css'; // MUST be top-level for cssInjectionMode:'ui' to pick it up
 
 import { mountChip, teardownChip } from './chip.js';
+import { SFX_MSG } from '../../lib/types.js';
 
 export default defineContentScript({
   matches: ['<all_urls>'],
@@ -46,10 +47,16 @@ export default defineContentScript({
     // Unmount if the content script context is invalidated (e.g., extension reload)
     ctx.onInvalidated(ui.remove);
 
-    // Also listen for the 'sfx-exit-review' event dispatched by the SW's EXIT_REVIEW
-    // handler (via browser.scripting.executeScript({func: dispatchSfxExitReview}))
-    window.addEventListener('sfx-exit-review', () => {
-      ui.remove();
-    }, { once: true });
+    // WR-07: listen for EXIT_REVIEW via the extension runtime message channel
+    // (SW → content script, same extension world) instead of a page-level
+    // CustomEvent that any page script can forge or suppress.
+    // The listener is removed automatically when the context is invalidated.
+    const exitListener = (msg: { type?: string }) => {
+      if (msg?.type === SFX_MSG.EXIT_REVIEW) {
+        ui.remove();
+      }
+    };
+    chrome.runtime.onMessage.addListener(exitListener);
+    ctx.onInvalidated(() => chrome.runtime.onMessage.removeListener(exitListener));
   },
 });
