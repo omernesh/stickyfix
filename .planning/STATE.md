@@ -3,14 +3,14 @@ gsd_state_version: 1.0
 milestone: v1.0
 milestone_name: milestone
 status: executing
-stopped_at: Phase 3 context gathered
-last_updated: "2026-05-31T04:29:27.445Z"
-last_activity: 2026-05-31 -- Phase 3 planning complete
+stopped_at: Completed 03-01-PLAN.md
+last_updated: "2026-05-31T04:42:04.047Z"
+last_activity: 2026-05-31
 progress:
   total_phases: 8
   completed_phases: 2
   total_plans: 10
-  completed_plans: 6
+  completed_plans: 7
   percent: 25
 ---
 
@@ -21,14 +21,14 @@ progress:
 See: .planning/PROJECT.md (updated 2026-05-31)
 
 **Core value:** A note dropped on a page reliably becomes a precise, context-rich .md file on disk in the right project's notes/ folder — never silently lost.
-**Current focus:** Phase 02 — Host MVP
+**Current focus:** Phase 03 — Extension Skeleton + SW Relay Proof
 
 ## Current Position
 
-Phase: 3
-Plan: Not started
+Phase: 03 (Extension Skeleton + SW Relay Proof) — EXECUTING
+Plan: 2 of 4
 Status: Ready to execute
-Last activity: 2026-05-31 -- Phase 3 planning complete
+Last activity: 2026-05-31
 
 Progress: [██░░░░░░░░] 22%
 
@@ -56,6 +56,7 @@ Progress: [██░░░░░░░░] 22%
 | Phase 01-scaffold-clean-room-foundation P01 | 7 | 3 tasks | 11 files |
 | Phase 01-scaffold-clean-room-foundation P03 | 6 | 2 tasks | 1 files |
 | Phase 02 P03 | 10 minutes | 2 tasks | 1 files |
+| Phase 03 P01 | 524s | 3 tasks | 9 files |
 
 ## Accumulated Context
 
@@ -73,6 +74,9 @@ Recent decisions affecting current work:
 - [02-02]: setCorsHeaders called first in every handler branch (before writeHead/end) — ensures 401/413/404 carry CORS headers so browser can read error bodies (Pitfall 6)
 - [Phase ?]: body.file from POST /annotation is absolute path (writeNote returns mdPath directly) — use existsSync(body.file) without notesDir join
 - [Phase ?]: smoke test asserts port in 39240-39260, 401 no-token, token POST + .md-on-disk — full end-to-end HOST-01-05 coverage
+- [Phase ?]: lib/types.ts SFX_MSG constants use uppercase snake (SFX_ENTER_REVIEW etc.) exported as const object — downstream plans import this object not the string literals
+- [Phase ?]: tsconfig.lib.json rootDir=. yields dist/lib/lib/* double-nested output; package.json test:lib references dist/lib/lib/test/*.js
+- [Phase ?]: A4 CSS auto-inject deferred to Plan 03-04 first build; scripting.insertCSS fallback pre-authorized in background.ts
 
 ### Pending Todos
 
@@ -98,6 +102,6 @@ None yet.
 
 ## Session Continuity
 
-Last session: 2026-05-31T03:56:55.505Z
-Stopped at: Phase 3 context gathered
-Resume file: .planning/phases/03-extension-skeleton-sw-relay-proof/03-CONTEXT.md
+Last session: 2026-05-31T04:42:04.039Z
+Stopped at: Completed 03-01-PLAN.md
+Resume file: None

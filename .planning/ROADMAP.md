@@ -95,7 +95,7 @@ Plans:
 Plans:
 **Wave 1**
 
-- [ ] 03-01-PLAN.md — lib/ core (types, storage schema, routing+discovery + node:test), MV3 manifest perms, Wave-0 CSS-inject (A4) build check (EXT-01/04/06/07/08/09/10)
+- [x] 03-01-PLAN.md — lib/ core (types, storage schema, routing+discovery + node:test), MV3 manifest perms, Wave-0 CSS-inject (A4) build check (EXT-01/04/06/07/08/09/10)
 
 **Wave 2** *(blocked on Wave 1)*
 
@@ -195,7 +195,7 @@ Phases execute in numeric order: 1 → 2 → 3 → 4 → 5 → 6 → 7 → 8
 |-------|----------------|--------|-----------|
 | 1. Scaffold & Clean-Room Foundation | 3/3 | Complete    | 2026-05-31 |
 | 2. Host MVP | 3/3 | Complete    | 2026-05-31 |
-| 3. Extension Skeleton + SW Relay Proof | 0/4 | Planned     | - |
+| 3. Extension Skeleton + SW Relay Proof | 1/4 | In Progress|  |
 | 4. Free-Note Mode + Capture Utilities | 0/TBD | Not started | - |
 | 5. Element-Note Mode + Rich Context Capture | 0/TBD | Not started | - |
 | 6. Region Capture + Visual Design | 0/TBD | Not started | - |
