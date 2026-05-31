@@ -1,0 +1,235 @@
+/* stickyfix popup — functional-minimal, ~320px, neutral palette (Phase 6 adds post-it aesthetics) */
+
+* {
+  box-sizing: border-box;
+  margin: 0;
+  padding: 0;
+}
+
+body {
+  width: 320px;
+  min-height: 80px;
+  font-family: system-ui, -apple-system, sans-serif;
+  font-size: 13px;
+  color: #1a1a1a;
+  background: #f8f8f8;
+}
+
+#sfx-popup-root {
+  display: flex;
+  flex-direction: column;
+  gap: 0;
+}
+
+/* ── Header ───────────────────────────────────────────────────────────────── */
+
+#sfx-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 10px 12px 8px;
+  border-bottom: 1px solid #e0e0e0;
+  background: #fff;
+}
+
+#sfx-wordmark {
+  font-size: 14px;
+  font-weight: 700;
+  letter-spacing: -0.02em;
+  color: #111;
+}
+
+#sfx-host-summary {
+  font-size: 11px;
+  color: #666;
+}
+
+/* ── Host list ────────────────────────────────────────────────────────────── */
+
+#sfx-host-list {
+  background: #fff;
+  border-bottom: 1px solid #e0e0e0;
+}
+
+.sfx-host-row {
+  display: grid;
+  grid-template-columns: 10px 1fr auto;
+  align-items: start;
+  gap: 8px;
+  padding: 8px 12px;
+  border-bottom: 1px solid #f0f0f0;
+}
+
+.sfx-host-row:last-child {
+  border-bottom: none;
+}
+
+/* Connection dot */
+.sfx-dot {
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  margin-top: 3px;
+  flex-shrink: 0;
+}
+
+.sfx-dot--green {
+  background: #22c55e;
+}
+
+.sfx-dot--grey {
+  background: #9ca3af;
+}
+
+/* Host info block */
+.sfx-host-info {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  min-width: 0;
+}
+
+.sfx-host-name {
+  font-weight: 700;
+  font-size: 13px;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.sfx-host-port {
+  font-size: 11px;
+  color: #666;
+}
+
+/* Token input */
+.sfx-token-input {
+  font-family: ui-monospace, 'Cascadia Code', 'Courier New', monospace;
+  font-size: 11px;
+  width: 96px;
+  padding: 3px 6px;
+  border: 1px solid #d0d0d0;
+  border-radius: 4px;
+  background: #fafafa;
+  color: #333;
+  outline: none;
+  transition: border-color 0.15s;
+}
+
+.sfx-token-input:focus {
+  border-color: #888;
+  background: #fff;
+}
+
+/* ── Empty state ──────────────────────────────────────────────────────────── */
+
+#sfx-empty-state {
+  padding: 14px 12px;
+  background: #fff;
+  border-bottom: 1px solid #e0e0e0;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+#sfx-empty-msg {
+  font-size: 12px;
+  color: #444;
+}
+
+#sfx-empty-hint {
+  font-size: 11px;
+  color: #666;
+  line-height: 1.6;
+}
+
+#sfx-empty-hint code {
+  font-family: ui-monospace, 'Cascadia Code', 'Courier New', monospace;
+  font-size: 11px;
+  background: #f0f0f0;
+  padding: 1px 4px;
+  border-radius: 3px;
+}
+
+#sfx-refresh-btn {
+  align-self: flex-start;
+  padding: 5px 10px;
+  font-size: 12px;
+  border: 1px solid #ccc;
+  border-radius: 4px;
+  background: #f5f5f5;
+  cursor: pointer;
+  color: #333;
+}
+
+#sfx-refresh-btn:hover {
+  background: #eee;
+}
+
+/* ── Review Mode toggle ───────────────────────────────────────────────────── */
+
+#sfx-toggle-section {
+  padding: 10px 12px;
+  background: #fff;
+  border-bottom: 1px solid #e0e0e0;
+  display: flex;
+  flex-direction: column;
+  gap: 5px;
+}
+
+#sfx-review-btn {
+  padding: 7px 14px;
+  font-size: 13px;
+  font-weight: 600;
+  border: none;
+  border-radius: 5px;
+  background: #111;
+  color: #fff;
+  cursor: pointer;
+  width: 100%;
+  text-align: center;
+  transition: background 0.15s;
+}
+
+#sfx-review-btn:hover {
+  background: #333;
+}
+
+#sfx-review-btn:disabled {
+  background: #999;
+  cursor: not-allowed;
+}
+
+#sfx-review-btn.sfx-exit-mode {
+  background: #dc2626;
+}
+
+#sfx-review-btn.sfx-exit-mode:hover {
+  background: #b91c1c;
+}
+
+#sfx-review-btn.sfx-grant-mode {
+  background: #d97706;
+}
+
+#sfx-review-btn.sfx-grant-mode:hover {
+  background: #b45309;
+}
+
+#sfx-toggle-error {
+  font-size: 11px;
+  color: #dc2626;
+}
+
+/* ── Routing line ─────────────────────────────────────────────────────────── */
+
+#sfx-routing-section {
+  padding: 8px 12px;
+  background: #f8f8f8;
+}
+
+#sfx-routing-line {
+  font-size: 12px;
+  color: #555;
+  font-family: ui-monospace, 'Cascadia Code', 'Courier New', monospace;
+}

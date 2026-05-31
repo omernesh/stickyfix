@@ -4,9 +4,37 @@
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <title>stickyfix</title>
+    <link rel="stylesheet" href="./popup.css" />
   </head>
   <body>
-    <div id="sfx-popup-root"></div>
+    <div id="sfx-popup-root">
+      <!-- Header: wordmark + host count summary -->
+      <header id="sfx-header">
+        <span id="sfx-wordmark">stickyfix</span>
+        <span id="sfx-host-summary"></span>
+      </header>
+
+      <!-- Host list container (one row per discovered host) -->
+      <section id="sfx-host-list" aria-label="Discovered hosts"></section>
+
+      <!-- Empty state (shown when registry is empty) -->
+      <section id="sfx-empty-state" hidden>
+        <p id="sfx-empty-msg">No hosts found on 39240&#x2013;39260.</p>
+        <p id="sfx-empty-hint">Start one with:<br><code>npm run host -- --root &lt;dir&gt;</code></p>
+        <button id="sfx-refresh-btn" type="button">Refresh</button>
+      </section>
+
+      <!-- Review Mode toggle -->
+      <section id="sfx-toggle-section">
+        <button id="sfx-review-btn" type="button">Enter Review Mode</button>
+        <span id="sfx-toggle-error" hidden></span>
+      </section>
+
+      <!-- Routing line for the active tab -->
+      <section id="sfx-routing-section">
+        <span id="sfx-routing-line">Checking route&#x2026;</span>
+      </section>
+    </div>
     <script type="module" src="./main.ts"></script>
   </body>
 </html>
