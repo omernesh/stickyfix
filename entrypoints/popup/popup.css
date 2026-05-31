@@ -6,6 +6,13 @@
   padding: 0;
 }
 
+/* The HTML `hidden` attribute is only `display:none` at UA specificity (0,0,1,0);
+   ID rules like `#sfx-empty-state{display:flex}` silently defeat it. Force the
+   attribute to always win so JS toggling `.hidden` actually hides the element. */
+[hidden] {
+  display: none !important;
+}
+
 body {
   width: 320px;
   min-height: 80px;
