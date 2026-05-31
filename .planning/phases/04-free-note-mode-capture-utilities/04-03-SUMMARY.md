@@ -63,6 +63,7 @@ completed: "2026-05-31"
 | Task | Name | Commit | Files |
 |------|------|--------|-------|
 | 1 | handleCaptureTab + SFX_CAPTURE_TAB router case | 496f4c8 | entrypoints/background.ts |
+| 1b | Security fix — sender-bind SFX_CAPTURE_TAB (T-04 IDOR) | 6736413 | entrypoints/background.ts |
 | 2 | Integration proof (manual) | PENDING — awaiting human verification | — |
 
 ## Files Created/Modified
@@ -76,9 +77,44 @@ completed: "2026-05-31"
 - Router case casts to `(msg as MsgCaptureTab).tabId` — same pattern as existing `MsgSetRoute`/`MsgGetTabId` local interfaces in background.ts.
 - Free-note Send (`handleSendAnnotation`, `card.ts`) left completely untouched per D-06.
 
+## Security Fix (post-implementation, automated review)
+
+**Finding (HIGH — Spoofable Message Parameter / cross-tab IDOR):** The initial
+`case SFX_CAPTURE_TAB:` branch passed `(msg as MsgCaptureTab).tabId` straight from
+the message body into `handleCaptureTab`. A content script running in tab A could
+send the `tabId` of tab B and capture a screenshot of an arbitrary tab it does not
+control — an Insecure Direct Object Reference across the content-script → SW trust
+boundary.
+
+**Mitigation (commit 6736413):** The router now sender-binds the request before
+invoking the handler — it returns `{ ok:false, error:'forbidden' }` unless
+`sender.tab?.id != null && sender.tab.id === reqTabId`. This restricts a content
+script to capturing ONLY its own tab, the same sender-bound trust model already used
+by `SFX_GET_TAB_ID`, and consistent with the file's "never trust the message body"
+invariant (T-03-01). Note this is defense-in-depth alongside the existing
+`windowId`-from-`chrome.tabs.get` anti-spoof inside `handleCaptureTab` (T-04-07):
+the router gate prevents a forged tabId from ever reaching the handler.
+
+```typescript
+case SFX_CAPTURE_TAB: {
+  const reqTabId = (msg as MsgCaptureTab).tabId;
+  if (sender.tab?.id == null || sender.tab.id !== reqTabId) {
+    sendResponse({ ok: false, error: 'forbidden' });
+    return true;
+  }
+  handleCaptureTab(reqTabId).then(sendResponse).catch(...);
+  return true;
+}
+```
+
+**Verification:** `tsc --noEmit` x2 + `npm run build` + `npm run check` (57 tests) all exit 0.
+
 ## Deviations from Plan
 
-None - plan executed exactly as written for Task 1.
+None - plan executed exactly as written for Task 1. One post-implementation security
+fix applied from automated review (see "Security Fix" section above) — sender-binding
+hardens the T-04 IDOR surface without changing the public behavior of a legitimate
+same-tab capture request.
 
 ## Known Stubs
 
@@ -93,6 +129,7 @@ None new. Mitigations verified in code:
 | T-04-07 (Spoofing) | `windowId` from `chrome.tabs.get(tabId)`, never `msg.windowId` | grep: `captureVisibleTab(msg.` returns 0 matches |
 | T-04-08 (Info Disclosure) | captureVisibleTab captures only active visible viewport; trio is standalone, not auto-fired | D-06 enforced: card.ts/handleSendAnnotation unchanged |
 | T-04-09 (EoP) | captureVisibleTab appears exactly once, inside the SW handler | grep: exactly 1 actual call site in background.ts |
+| T-04 IDOR (Cross-tab capture spoofing) | Router sender-binds `reqTabId` to `sender.tab.id` before invoking handler; mismatch → `forbidden` | commit 6736413; a content script can only capture its own tab |
 
 ## Checkpoint: Task 2 — Human Integration Proof Required
 
