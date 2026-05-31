@@ -14,6 +14,8 @@ A note dropped on a page reliably becomes a precise, context-rich `.md` file on 
 
 - ✓ Cross-platform build (Windows/macOS/Linux) — no macOS-only steps — Phase 1 (`npm run build`/`npm run check` green on Windows; no sips/Bun)
 - ✓ MIT clean-room foundation established — `sfx-*`/`stickyfix` namespace + automated grep gate from commit one — Phase 1 (BUILD-04)
+- ✓ Localhost host writes notes to disk — `127.0.0.1`-only HTTP server, token auth, serial mutex, safe `.md`+`.png` writes inside `--root`, CORS, 12MB cap — Phase 2 (HOST-01..13; 48 tests)
+- ✓ Token auth on the host (`X-Stickyfix-Token`); host binds `127.0.0.1` only — Phase 2 (HOST-02, HOST-05; owner-only token file)
 
 ### Active
 
@@ -26,8 +28,7 @@ A note dropped on a page reliably becomes a precise, context-rich `.md` file on 
 - [ ] Auto element-highlight screenshot on element-note Send
 - [ ] Multi-project routing: one host per project, extension discovers all live hosts, routes by tab origin with zero per-note picks
 - [ ] One-time origin→project mapping persisted in `chrome.storage.local`, re-binds by name+origin across restarts
-- [ ] Token auth on the host (`X-Stickyfix-Token`), host binds `127.0.0.1` only
-- [ ] No silent failures — every routing/auth/connection error surfaces as a visible toast
+- [ ] No silent failures — every routing/auth/connection error surfaces as a visible toast (extension side)
 - [ ] Design-conscious sticky-note UI (genuine paper aesthetic, smooth drag, mode color-coding, shadow-DOM isolation)
 - [ ] Shipped `review-notes` AI skill: reads unread notes in serial order, renames each to `*.read.md`
 - [ ] MIT clean-room implementation — keep writing original code, nothing copied from the GPL upstream (gate enforced each phase)
@@ -90,4 +91,4 @@ This document evolves at phase transitions and milestone boundaries.
 4. Update Context with current state
 
 ---
-*Last updated: 2026-05-31 after Phase 1 (Scaffold & Clean-Room Foundation) — buildable WXT MV3 extension + runnable host stub + clean-room gate, all green on Windows. Next: Phase 2 (Host MVP).*
+*Last updated: 2026-05-31 after Phase 2 (Host MVP) — real `127.0.0.1` host: token-authed POST /annotation, serial mutex, safe `.md`+`.png` writes, CORS, 12MB cap; 48 tests green; code-review blockers fixed. Next: Phase 3 (Extension Skeleton + SW Relay Proof).*
