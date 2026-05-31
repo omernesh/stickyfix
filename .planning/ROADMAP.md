@@ -13,7 +13,7 @@ Eight phases deliver a Chrome MV3 extension + localhost host that turns on-page 
 
 Decimal phases appear between their surrounding integers in numeric order.
 
-- [ ] **Phase 1: Scaffold & Clean-Room Foundation** - Cross-platform WXT + host build succeeds; sfx-* identifier namespace established; no GPL artifacts
+- [x] **Phase 1: Scaffold & Clean-Room Foundation** - Cross-platform WXT + host build succeeds; sfx-* identifier namespace established; no GPL artifacts (completed 2026-05-31)
 - [ ] **Phase 2: Host MVP** - stickyfix-host writes .md + .png files with serial mutex, token auth, path safety, and CORS
 - [ ] **Phase 3: Extension Skeleton + SW Relay Proof** - Popup, host discovery, chrome.storage.local state, on-demand injection, dummy POST relay proven end-to-end
 - [ ] **Phase 4: Free-Note Mode + Capture Utilities** - Draggable FAB → post-it → Send → .md on disk; DPR crop, double-rAF flush, captureVisibleTab relay established as reusable utilities
@@ -47,7 +47,7 @@ Plans:
 
 **Wave 2** *(blocked on Wave 1 completion)*
 
-- [ ] 01-03-PLAN.md — Clean-room grep gate + .gitignore finalize + full `npm run check`/`build` verification (BUILD-01/04/05)
+- [x] 01-03-PLAN.md — Clean-room grep gate + .gitignore finalize + full `npm run check`/`build` verification (BUILD-01/04/05)
 
 ### Phase 2: Host MVP
 
@@ -167,7 +167,7 @@ Phases execute in numeric order: 1 → 2 → 3 → 4 → 5 → 6 → 7 → 8
 
 | Phase | Plans Complete | Status | Completed |
 |-------|----------------|--------|-----------|
-| 1. Scaffold & Clean-Room Foundation | 2/3 | In Progress|  |
+| 1. Scaffold & Clean-Room Foundation | 3/3 | Complete   | 2026-05-31 |
 | 2. Host MVP | 0/TBD | Not started | - |
 | 3. Extension Skeleton + SW Relay Proof | 0/TBD | Not started | - |
 | 4. Free-Note Mode + Capture Utilities | 0/TBD | Not started | - |
