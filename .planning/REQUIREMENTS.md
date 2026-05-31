@@ -48,7 +48,7 @@ Requirements for initial release. Each maps to roadmap phases.
 ### Free-Note Mode (FREE)
 
 - [ ] **FREE-01**: A draggable `+` floating action button opens a single post-it note card (textarea + Send/Cancel)
-- [ ] **FREE-02**: The post-it card is draggable; only one active note card at a time
+- [x] **FREE-02**: The post-it card is draggable; only one active note card at a time
 - [ ] **FREE-03**: Send captures url, title, timestamp, viewport, and POSTs to the routed host, writing `notes/0001-<ts>.md`
 - [ ] **FREE-04**: A toast confirms the written filename on success
 
@@ -161,7 +161,7 @@ Which phases cover which requirements. Updated during roadmap creation.
 | EXT-10 | Phase 3 | Complete |
 | EXT-11 | Phase 3 | Complete |
 | FREE-01 | Phase 4 | Pending |
-| FREE-02 | Phase 4 | Pending |
+| FREE-02 | Phase 4 | Complete |
 | FREE-03 | Phase 4 | Pending |
 | FREE-04 | Phase 4 | Pending |
 | ELEM-01 | Phase 5 | Pending |
