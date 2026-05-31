@@ -25,8 +25,10 @@ const BANNED = [
 
 const SCAN_EXTS = new Set(['.ts', '.js', '.mjs', '.cjs', '.json', '.html', '.css', '.md']);
 
-// Directories to skip — build outputs, vendor, and research/planning dirs that
-// legitimately reference the upstream identifiers (Pitfall 5 in RESEARCH.md).
+// Directories to skip — build outputs, vendor, research/planning dirs, and
+// gitignored local-only trees that legitimately reference upstream identifiers
+// (strategy docs, agent memory, user notes, editor config).
+// These are NOT part of the published MIT repo and must not trip the gate.
 const SKIP_DIRS = new Set([
   'node_modules',
   '.git',
@@ -34,6 +36,11 @@ const SKIP_DIRS = new Set([
   'dist',
   '.wxt',
   '.planning',
+  // Gitignored local-only trees (see .gitignore) — allowed to name upstream:
+  'notes',       // runtime user content, never committed
+  'private',     // private business/strategy docs, never published
+  '.claude',     // editor/agent config, never published
+  '.qmd-memory', // agent long-term memory, never published
 ]);
 
 // Root-level documentation and legal files that may reference the upstream
@@ -48,12 +55,21 @@ const SKIP_FILENAMES = new Set([
 
 /**
  * Recursively walk `dir`, collecting {file, match} for every banned pattern found.
+ * Unreadable files (broken symlinks, EPERM, deleted-mid-walk) are skipped with a
+ * warning — an I/O hiccup is NOT a clean-room violation.
  * @param {string} dir
  * @param {{ file: string; match: string }[]} found
  * @returns {{ file: string; match: string }[]}
  */
 function walk(dir, found = []) {
-  for (const entry of readdirSync(dir, { withFileTypes: true })) {
+  let entries;
+  try {
+    entries = readdirSync(dir, { withFileTypes: true });
+  } catch {
+    process.stderr.write(`⚠ skipped unreadable directory: ${dir}\n`);
+    return found;
+  }
+  for (const entry of entries) {
     if (entry.isDirectory()) {
       if (!SKIP_DIRS.has(entry.name)) {
         walk(join(dir, entry.name), found);
@@ -61,7 +77,13 @@ function walk(dir, found = []) {
     } else if (SCAN_EXTS.has(extname(entry.name))) {
       if (SKIP_FILENAMES.has(entry.name)) continue;
       const full = join(dir, entry.name);
-      const text = readFileSync(full, 'utf8');
+      let text;
+      try {
+        text = readFileSync(full, 'utf8');
+      } catch {
+        process.stderr.write(`⚠ skipped unreadable: ${full}\n`);
+        continue; // I/O error is not a violation
+      }
       for (const pattern of BANNED) {
         const match = text.match(pattern);
         if (match) {
