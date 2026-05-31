@@ -48,7 +48,7 @@ type AnnotationResponse = SfxResponse<{
 
 type EnterReviewResponse = SfxResponse<{ route: HostEntry | null }>;
 type ExitReviewResponse = { ok: true } | { ok: false; error: string };
-type RefreshResponse = SfxResponse<{ count: number }>;
+type RefreshResponse = SfxResponse<{ count: number; hosts: string[] }>;
 
 // ---------------------------------------------------------------------------
 // refreshHosts — EXT-04/EXT-10: discover + reconcile + persist
@@ -94,8 +94,14 @@ function readPageSelfId(): string | null {
 // ---------------------------------------------------------------------------
 
 async function handleRefreshHosts(): Promise<RefreshResponse> {
-  const discovered = await refreshHosts();
-  return { ok: true, count: discovered.length };
+  // Discover + reconcile + persist, then return the full set of KNOWN host
+  // names from the reconciled registry (not just freshly-discovered ones —
+  // a persisted host that is briefly offline must still be pickable in the
+  // content-script dropdown). EXT-04/EXT-07.
+  await refreshHosts();
+  const registry = await sfxRegistry.getValue();
+  const hosts = Object.keys(registry);
+  return { ok: true, count: hosts.length, hosts };
 }
 
 async function handleEnterReview(

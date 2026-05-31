@@ -242,36 +242,25 @@ function renderDropdown(
   defaultOpt.textContent = '— select project —';
   select.appendChild(defaultOpt);
 
-  // We need to get the registry to populate the dropdown.
-  // Ask SW for the host list via REFRESH_HOSTS (which also returns the registry count)
-  // then fall back to an empty-list notice if no hosts are known.
-  // Since GET_ROUTE returned unmapped, the SW registry may have hosts — use a
-  // lightweight approach: ask REFRESH_HOSTS to refresh, then re-query.
-  // For now, insert the select immediately; populate after the response.
+  // Insert the select immediately; populate after the SW responds.
   chip.insertBefore(select, sendBtn);
 
-  // Request a fresh host list so we know what projects are available.
-  chrome.runtime.sendMessage({ type: SFX_MSG.REFRESH_HOSTS }, (refreshResp: { ok: boolean; count: number }) => {
-    if (chrome.runtime.lastError || !refreshResp?.ok) {
-      const errOpt = document.createElement('option');
-      errOpt.value = '';
-      errOpt.textContent = 'No hosts found — start one first';
-      select.appendChild(errOpt);
-      return;
-    }
+  // Ask the SW (the owner of the registry) for the current host names. The SW
+  // refreshes discovery, reconciles, and returns the full list of known host
+  // names — the content script never reads chrome.storage directly (the SW owns
+  // all state, and the raw storage key may differ from WXT's typed wrapper).
+  chrome.runtime.sendMessage(
+    { type: SFX_MSG.REFRESH_HOSTS },
+    (refreshResp: { ok: boolean; count: number; hosts?: string[] } | undefined) => {
+      if (chrome.runtime.lastError || !refreshResp?.ok) {
+        const errOpt = document.createElement('option');
+        errOpt.value = '';
+        errOpt.textContent = 'No hosts found — start one first';
+        select.appendChild(errOpt);
+        return;
+      }
 
-    // Re-query GET_ROUTE after refresh (registry is now fresh)
-    // Actually we need registry contents — GET_ROUTE returns the route for ONE origin.
-    // Use the error message from the unmapped response which contains a list of
-    // discovered names. Since we don't have a LIST_HOSTS message, we work around
-    // by asking the SW for a route with a sentinel host list pattern.
-    // The simplest correct approach: use the registry stored in chrome.storage.local.
-    // Content scripts can read chrome.storage.local directly.
-    chrome.storage.local.get(['sfxRegistry'], (result: Record<string, unknown>) => {
-      if (chrome.runtime.lastError) return;
-      const registry = (result['sfxRegistry'] ?? {}) as Record<string, HostEntry>;
-      const hostNames = Object.keys(registry);
-
+      const hostNames = refreshResp.hosts ?? [];
       if (hostNames.length === 0) {
         const emptyOpt = document.createElement('option');
         emptyOpt.value = '';
@@ -286,8 +275,8 @@ function renderDropdown(
         opt.textContent = name; // textContent, not innerHTML
         select.appendChild(opt);
       }
-    });
-  });
+    }
+  );
 
   // Handle selection
   select.addEventListener('change', () => {
