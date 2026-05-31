@@ -6,7 +6,7 @@
  * Pattern 11: VERSION read from package.json at runtime via import.meta.url
  */
 
-import { readFileSync, mkdirSync, writeFileSync, existsSync } from 'node:fs';
+import { readFileSync, mkdirSync, writeFileSync, existsSync, rmSync } from 'node:fs';
 import { resolve, join, basename, dirname } from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { randomUUID } from 'node:crypto';
@@ -85,7 +85,16 @@ export function ensureNotesDir(notesDir: string): void {
 /**
  * Write the resolved token to <root>/.stickyfix-token for developer convenience.
  * The file is already gitignored (verified in Phase 1).
+ *
+ * The token is a credential, so the file is created owner-only (mode 0o600).
+ * Any pre-existing file is removed first so a prior, looser-permissioned inode
+ * (e.g. 0o644) is not reused. POSIX mode bits are honored on macOS/Linux; on
+ * Windows they are largely ignored by the filesystem, which is acceptable.
  */
 export function writeTokenFile(root: string, token: string): void {
-  writeFileSync(join(root, '.stickyfix-token'), token, 'utf8');
+  const tokenPath = join(root, '.stickyfix-token');
+  if (existsSync(tokenPath)) {
+    rmSync(tokenPath, { force: true });
+  }
+  writeFileSync(tokenPath, token, { encoding: 'utf8', mode: 0o600 });
 }
