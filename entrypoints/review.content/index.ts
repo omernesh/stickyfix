@@ -44,8 +44,15 @@ export default defineContentScript({
         // and mount the FAB. openCard/closeCard share the same container.
         getTabId()
           .then(tabId => {
-            mountFab(container, () => {
-              openCard(container, tabId, () => {}, toast);
+            // WR-01: wire aria-expanded on the FAB element returned by mountFab.
+            // 'false' at construction (set in fab.ts); flip to 'true' when the
+            // card opens, back to 'false' when it dismisses.
+            const fab = mountFab(container, () => {
+              fab.setAttribute('aria-expanded', 'true');
+              openCard(container, tabId, () => {
+                // onDismiss: card closed (Cancel or Send success) → collapse FAB
+                fab.setAttribute('aria-expanded', 'false');
+              }, toast);
             });
           })
           .catch(() => {
