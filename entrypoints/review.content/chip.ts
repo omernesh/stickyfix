@@ -83,6 +83,30 @@ const teardownMap = new WeakMap<HTMLElement, () => void>();
  * @param unmountFn  Callback to fully remove the shadow-root UI (Exit button)
  */
 export function mountChip(container: HTMLElement, unmountFn: () => void): void {
+  // WR-03: feedbackTimer scoped per-instance (not module-level) so re-injection
+  // cannot cancel a detached chip's auto-dismiss timer.
+  let feedbackTimer: ReturnType<typeof setTimeout> | null = null;
+
+  /** Show inline feedback on this chip's feedback span. Auto-hides after 1.5s on success. */
+  function showFeedback(feedbackEl: HTMLSpanElement, msg: string, isError: boolean): void {
+    if (feedbackTimer !== null) {
+      clearTimeout(feedbackTimer);
+      feedbackTimer = null;
+    }
+    feedbackEl.textContent = msg;
+    feedbackEl.className = isError
+      ? 'sfx-chip-feedback sfx-feedback-error'
+      : 'sfx-chip-feedback';
+    feedbackEl.style.display = '';
+    if (!isError) {
+      feedbackTimer = setTimeout(() => {
+        feedbackEl.style.display = 'none';
+        feedbackEl.textContent = '';
+        feedbackTimer = null;
+      }, 1500);
+    }
+  }
+
   // Build the outer chip div
   const chip = document.createElement('div');
   chip.id = 'sfx-chip';
@@ -147,11 +171,11 @@ export function mountChip(container: HTMLElement, unmountFn: () => void): void {
 
       if (resp.ok) {
         // Mapped — show routed label + wire D-09 re-map affordance
-        renderRoutedLabel(label, dot, resp.host, chip, feedback, sendBtn, tabId, origin);
-        wireSendButton(sendBtn, feedback, tabId, resp.host);
+        renderRoutedLabel(label, dot, resp.host, chip, feedback, sendBtn, tabId, origin, showFeedback);
+        wireSendButton(sendBtn, feedback, tabId, resp.host, showFeedback);
       } else if (resp.reason === 'unmapped') {
         // Step 4 — one-time dropdown (EXT-07/EXT-08)
-        renderDropdown(chip, label, dot, feedback, sendBtn, tabId, origin);
+        renderDropdown(chip, label, dot, feedback, sendBtn, tabId, origin, showFeedback);
       } else {
         label.textContent = resp.error ?? 'Route error';
         dot.classList.add('sfx-dot-error');
@@ -219,7 +243,8 @@ function renderRoutedLabel(
   feedback: HTMLSpanElement,
   sendBtn: HTMLButtonElement,
   tabId: number,
-  origin: string
+  origin: string,
+  showFeedbackFn: (el: HTMLSpanElement, msg: string, isError: boolean) => void
 ): void {
   // textContent only — no innerHTML (Pattern 9)
   label.textContent = `→ ${host.name} · ${host.notesDir}`;
@@ -227,7 +252,7 @@ function renderRoutedLabel(
 
   // D-09: .onclick = assignment (idempotent — prevents stacking on re-renders)
   label.onclick = () => {
-    renderDropdown(chip, label, dot, feedback, sendBtn, tabId, origin);
+    renderDropdown(chip, label, dot, feedback, sendBtn, tabId, origin, showFeedbackFn);
   };
   // UI-SPEC §4: cursor + tooltip signal clickability
   label.style.cursor = 'pointer';
@@ -247,7 +272,8 @@ function renderDropdown(
   feedback: HTMLSpanElement,
   sendBtn: HTMLButtonElement,
   tabId: number,
-  origin: string
+  origin: string,
+  showFeedbackFn: (el: HTMLSpanElement, msg: string, isError: boolean) => void
 ): void {
   // Update label to explain what's needed
   label.textContent = 'Pick project for this site:';
@@ -310,7 +336,7 @@ function renderDropdown(
       (resp: SetRouteResponse | undefined) => {
         // WR-02: guard resp against undefined
         if (chrome.runtime.lastError || !resp || !resp.ok) {
-          showFeedback(feedback, `Set route failed: ${resp && !resp.ok ? resp.error : 'unknown'}`, true);
+          showFeedbackFn(feedback, `Set route failed: ${resp && !resp.ok ? resp.error : 'unknown'}`, true);
           return;
         }
 
@@ -320,10 +346,10 @@ function renderDropdown(
         }
 
         // Render the mapped label + wire D-09 re-map affordance
-        renderRoutedLabel(label, dot, resp.host, chip, feedback, sendBtn, tabId, origin);
+        renderRoutedLabel(label, dot, resp.host, chip, feedback, sendBtn, tabId, origin, showFeedbackFn);
 
         // Wire the Send button now that we have a host
-        wireSendButton(sendBtn, feedback, tabId, resp.host);
+        wireSendButton(sendBtn, feedback, tabId, resp.host, showFeedbackFn);
       }
     );
   });
@@ -348,12 +374,14 @@ function wireSendButton(
   sendBtn: HTMLButtonElement,
   feedback: HTMLSpanElement,
   tabId: number,
-  _host: HostEntry
+  _host: HostEntry,
+  showFeedbackFn: (el: HTMLSpanElement, msg: string, isError: boolean) => void
 ): void {
   sendBtn.disabled = false;
   sendBtn.removeAttribute('title');
 
-  sendBtn.addEventListener('click', () => {
+  // .onclick = assignment (idempotent — prevents listener stacking on D-09 re-map; CR-01)
+  sendBtn.onclick = () => {
     sendBtn.disabled = true;
 
     // §9.1 minimal valid free-note payload (D-09)
@@ -378,49 +406,18 @@ function wireSendButton(
         sendBtn.disabled = false;
         // WR-02: guard resp against undefined
         if (chrome.runtime.lastError || !resp) {
-          showFeedback(feedback, 'SW error: ' + (chrome.runtime.lastError?.message ?? 'no response'), true);
+          showFeedbackFn(feedback, 'SW error: ' + (chrome.runtime.lastError?.message ?? 'no response'), true);
           return;
         }
         if (resp.ok) {
-          showFeedback(feedback, `sent ✓ ${resp.file}`, false);
+          showFeedbackFn(feedback, `sent ✓ ${resp.file}`, false);
         } else {
           // Never silent — show error inline (REL-01)
-          showFeedback(feedback, resp.error, true);
+          showFeedbackFn(feedback, resp.error, true);
         }
       }
     );
-  });
-}
-
-// ---------------------------------------------------------------------------
-// Inline feedback helper
-// ---------------------------------------------------------------------------
-
-let feedbackTimer: ReturnType<typeof setTimeout> | null = null;
-
-/**
- * Show a brief inline feedback message on the chip.
- * Auto-hides after ~1.5s for success; stays for errors until next interaction.
- */
-function showFeedback(feedback: HTMLSpanElement, msg: string, isError: boolean): void {
-  if (feedbackTimer !== null) {
-    clearTimeout(feedbackTimer);
-    feedbackTimer = null;
-  }
-
-  feedback.textContent = msg;
-  feedback.className = isError
-    ? 'sfx-chip-feedback sfx-feedback-error'
-    : 'sfx-chip-feedback';
-  feedback.style.display = '';
-
-  if (!isError) {
-    feedbackTimer = setTimeout(() => {
-      feedback.style.display = 'none';
-      feedback.textContent = '';
-      feedbackTimer = null;
-    }, 1500);
-  }
+  };
 }
 
 // ---------------------------------------------------------------------------
