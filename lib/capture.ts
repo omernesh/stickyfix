@@ -61,9 +61,17 @@ export function cropToRect(
   dpr: number
 ): Promise<string> {
   return new Promise((resolve, reject) => {
+    const { sx, sy, sw, sh } = computeCropCoords(rect, dpr);
+    // CR-02: guard zero-dimension rect — toDataURL on a 0×0 canvas returns a
+    // blank-but-valid PNG without throwing, violating the no-silent-failure invariant.
+    if (sw <= 0 || sh <= 0) {
+      reject(new Error(
+        `Zero-dimension crop rect: ${sw}x${sh} (CSS: ${rect.width}x${rect.height} @ DPR ${dpr})`
+      ));
+      return;
+    }
     const img = new Image();
     img.onload = () => {
-      const { sx, sy, sw, sh } = computeCropCoords(rect, dpr);
       const canvas = document.createElement('canvas');
       canvas.width = sw;
       canvas.height = sh;

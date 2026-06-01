@@ -31,4 +31,22 @@ describe('computeCropCoords', () => {
     const c = computeCropCoords(rect, 2);
     assert.deepStrictEqual(c, { sx: 20, sy: 40, sw: 200, sh: 100 });
   });
+
+  // CR-02: zero-dimension guard — element fully off-screen or collapsed
+  test('DPR=1 zero-width produces sw=0 (zero-dim guard required in cropToRect)', () => {
+    const c = computeCropCoords({ x: 0, y: 0, width: 0, height: 50 }, 1);
+    assert.strictEqual(c.sw, 0);
+    assert.strictEqual(c.sh, 50);
+  });
+
+  test('DPR=1 zero-height produces sh=0 (zero-dim guard required in cropToRect)', () => {
+    const c = computeCropCoords({ x: 0, y: 0, width: 100, height: 0 }, 1);
+    assert.strictEqual(c.sw, 100);
+    assert.strictEqual(c.sh, 0);
+  });
+
+  test('DPR=0 produces all-zero coords (zero-dim guard required in cropToRect)', () => {
+    const c = computeCropCoords(rect, 0);
+    assert.deepStrictEqual(c, { sx: 0, sy: 0, sw: 0, sh: 0 });
+  });
 });
