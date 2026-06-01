@@ -67,12 +67,24 @@ export function openCard(
   showToastFn: (msg: string, isError: boolean) => void
 ): void {
   // FREE-02: single-card guard (DOM-free decision delegated to card-state.ts)
+  // WR-04: if card-state says active but activeCard is null (stale flag after
+  // CS re-injection without page navigation), reset state and open fresh.
+  // This handles the race where onRemove/closeCard ran but the module-level
+  // `active` flag was not reset because the module cache was reused.
   const decision = tryOpenCard();
   if (decision === 'focus-existing') {
-    // Focus the existing textarea — do NOT spawn a second card (D-02)
-    const existing = activeCard?.querySelector<HTMLTextAreaElement>('#sfx-card-textarea');
-    existing?.focus();
-    return;
+    if (activeCard === null) {
+      // Stale state: state-machine thinks a card is open but DOM says otherwise.
+      // Reset and proceed to open a new card.
+      closeCardState();
+      // tryOpenCard again now that state is clean
+      tryOpenCard();
+    } else {
+      // Genuine existing card — focus its textarea (D-02)
+      const existing = activeCard.querySelector<HTMLTextAreaElement>('#sfx-card-textarea');
+      existing?.focus();
+      return;
+    }
   }
 
   // Build card via createElement/textContent — INVARIANT C
