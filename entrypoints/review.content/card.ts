@@ -191,7 +191,12 @@ export function openCard(
       inertia: false,
       allowFrom: '.sfx-card-header',
       modifiers: [
-        interact.modifiers.restrictRect({ restriction: 'window', endOnly: false }),
+        // FIX 4: 'window' is treated as a CSS selector → null → no clamping.
+        // Use a function that returns the current viewport rect as the restriction.
+        interact.modifiers.restrictRect({
+          restriction: () => ({ left: 0, top: 0, right: window.innerWidth, bottom: window.innerHeight }),
+          endOnly: false,
+        }),
       ],
       listeners: {
         start(event: Interact.DragEvent) {
