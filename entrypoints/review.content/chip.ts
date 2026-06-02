@@ -17,6 +17,7 @@
 
 import { SFX_MSG, SFX_SET_ROUTE, SFX_GET_TAB_ID } from '../../lib/types.js';
 import type { HostEntry, AnnotationPayload } from '../../lib/types.js';
+import { enterPickMode, exitPickMode } from './picker.js';
 
 // ---------------------------------------------------------------------------
 // Types (local to this module)
@@ -79,10 +80,16 @@ const teardownMap = new WeakMap<HTMLElement, () => void>();
  * Mount the connection chip inside the shadow-root container.
  * All DOM is built via createElement/textContent — no innerHTML.
  *
- * @param container  The shadow-root mounting point provided by createShadowRootUi
- * @param unmountFn  Callback to fully remove the shadow-root UI (Exit button)
+ * @param container      The shadow-root mounting point provided by createShadowRootUi
+ * @param unmountFn      Callback to fully remove the shadow-root UI (Exit button)
+ * @param onPickerClick  Optional callback invoked when the user clicks a page element
+ *                       in pick mode (wired by index.ts in Plan 03; default: no-op)
  */
-export function mountChip(container: HTMLElement, unmountFn: () => void): void {
+export function mountChip(
+  container: HTMLElement,
+  unmountFn: () => void,
+  onPickerClick?: (el: Element) => void
+): void {
   // WR-03: feedbackTimer scoped per-instance (not module-level) so re-injection
   // cannot cancel a detached chip's auto-dismiss timer.
   let feedbackTimer: ReturnType<typeof setTimeout> | null = null;
@@ -135,6 +142,58 @@ export function mountChip(container: HTMLElement, unmountFn: () => void): void {
   sendBtn.textContent = 'Send';
   sendBtn.setAttribute('aria-label', 'Send stub annotation (relay proof)');
   chip.appendChild(sendBtn);
+
+  // Picker button — 🎯 element pick mode toggle (ELEM-01 / UI-SPEC §1)
+  const pickerBtn = document.createElement('button');
+  pickerBtn.className = 'sfx-chip-btn sfx-picker-btn';
+  pickerBtn.textContent = '🎯';
+  pickerBtn.setAttribute('aria-label', 'Pick element');
+  pickerBtn.setAttribute('aria-pressed', 'false');
+  chip.appendChild(pickerBtn);
+
+  // Track picker active state
+  let pickerActive = false;
+
+  /** Reset picker button to resting state (aria + visual). */
+  function deactivatePicker(): void {
+    pickerActive = false;
+    pickerBtn.setAttribute('aria-pressed', 'false');
+    pickerBtn.setAttribute('aria-label', 'Pick element');
+    pickerBtn.classList.remove('sfx-active');
+  }
+
+  /** Activate picker button (aria + visual). */
+  function activatePicker(): void {
+    pickerActive = true;
+    pickerBtn.setAttribute('aria-pressed', 'true');
+    pickerBtn.setAttribute('aria-label', 'Cancel element pick (Esc)');
+    pickerBtn.classList.add('sfx-active');
+  }
+
+  pickerBtn.addEventListener('click', () => {
+    if (pickerActive) {
+      // Toggle off — cancel pick mode
+      deactivatePicker();
+      exitPickMode();
+    } else {
+      // Enter pick mode
+      activatePicker();
+      enterPickMode(
+        container,
+        // onElementClick: pick mode already exited inside picker.ts on click;
+        // reset button visual + invoke injected onPickerClick callback (Plan 03)
+        (el: Element) => {
+          deactivatePicker();
+          onPickerClick?.(el);
+        },
+        // onEsc: reset button visual + return focus to picker button (UI-SPEC §Focus)
+        () => {
+          deactivatePicker();
+          pickerBtn.focus();
+        }
+      );
+    }
+  });
 
   // Exit button
   const exitBtn = document.createElement('button');
@@ -208,6 +267,8 @@ export function mountChip(container: HTMLElement, unmountFn: () => void): void {
   // ---------------------------------------------------------------------------
 
   teardownMap.set(container, () => {
+    // Also exit pick mode if active so it never outlives the UI
+    exitPickMode();
     // Remove chip from container — shadow root cleanup
     if (chip.parentElement) {
       chip.parentElement.removeChild(chip);
