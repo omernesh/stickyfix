@@ -1,10 +1,11 @@
 ---
 phase: 5
 slug: element-note-mode-rich-context-capture
-status: draft
-nyquist_compliant: false
-wave_0_complete: false
+status: verified
+nyquist_compliant: true
+wave_0_complete: true
 created: 2026-06-02
+validated: 2026-06-03
 source: [05-RESEARCH.md]
 ---
 
@@ -43,16 +44,16 @@ source: [05-RESEARCH.md]
 
 | Req ID | Behavior | Test Type | Automated Command | File Exists | Status |
 |--------|----------|-----------|-------------------|-------------|--------|
-| ELEM-02 | `buildSelector` wraps `finder` + tagName fallback on throw | unit | `npm run test:lib` | ❌ W0: `lib/test/element-context.test.ts` | ⬜ pending |
-| ELEM-03 | `captureElementContext` extracts tag/id/classList/role/ariaLabel; text truncation @~1000 | unit | `npm run test:lib` | ❌ W0: `lib/test/element-context.test.ts` | ⬜ pending |
-| ELEM-04 | `CURATED_STYLE_PROPS` length ~25; `outerHTML` slice @2000 | unit | `npm run test:lib` | ❌ W0: `lib/test/element-context.test.ts` | ⬜ pending |
-| ELEM-05 | `getReactComponentName` returns name from mock fiber; `undefined` w/o `__reactFiber$`; max-steps guard | unit | `npm run test:lib` | ❌ W0: `lib/test/element-context.test.ts` | ⬜ pending |
-| ELEM-06 | `nearestTestId` returns own / ancestor `data-testid`; `undefined` if none | unit | `npm run test:lib` | ❌ W0: `lib/test/element-context.test.ts` | ⬜ pending |
-| ELEM-07 | `buildContextSummary` formats variants (no text / no component / no id) | unit | `npm run test:lib` | ❌ W0: `lib/test/element-context.test.ts` | ⬜ pending |
-| ELEM-08 | `drawHighlightBox` strokes/fills DPR-scaled coords (mock ctx records calls) | unit | `npm run test:lib` | ❌ W0: `lib/test/highlight-draw.test.ts` | ⬜ pending |
-| ELEM-01 | Hover overlay appears/moves/hides; single-shot pick state machine; Esc exits cleanly | manual | — (Chrome runtime) | 🟡M |
-| ELEM-08 | `+1.png` shows page + box, no sfx own-UI visible (D-02a) | manual | — (Chrome runtime + paint) | 🟡M |
-| ELEM-09 | `.md` on disk has frontmatter + element section + styles table + truncated outerHTML | manual | — (end-to-end host) | 🟡M |
+| ELEM-02 | `buildSelector` wraps `finder` + tagName fallback on throw | unit | `npm run test:lib` | ✅ `lib/test/element-context.test.ts` | ✅ green |
+| ELEM-03 | `captureElementContext` extracts tag/id/classList/role/ariaLabel; text truncation @~1000 | unit | `npm run test:lib` | ✅ `lib/test/element-context.test.ts` | ✅ green |
+| ELEM-04 | `CURATED_STYLE_PROPS` length ~25; `outerHTML` slice @2000 | unit | `npm run test:lib` | ✅ `lib/test/element-context.test.ts` | ✅ green |
+| ELEM-05 | `getReactComponentName` returns name from mock fiber; `undefined` w/o `__reactFiber$`; max-steps guard | unit | `npm run test:lib` | ✅ `lib/test/element-context.test.ts` | ✅ green |
+| ELEM-06 | `nearestTestId` returns own / ancestor `data-testid`; `undefined` if none | unit | `npm run test:lib` | ✅ `lib/test/element-context.test.ts` | ✅ green |
+| ELEM-07 | `buildContextSummary` formats variants (no text / no component / no id) | unit | `npm run test:lib` | ✅ `lib/test/element-context.test.ts` | ✅ green |
+| ELEM-08 | `drawHighlightBox` strokes/fills DPR-scaled coords (mock ctx records calls) | unit | `npm run test:lib` | ✅ `lib/test/highlight-draw.test.ts` | ✅ green |
+| ELEM-01 | Hover overlay appears/moves/hides; single-shot pick state machine; Esc exits cleanly | manual | — (Chrome runtime) | 🟢M verified (UAT T1) |
+| ELEM-08 | `+1.png` shows page + box, no sfx own-UI visible (D-02a) | manual | — (Chrome runtime + paint) | 🟢M verified (UAT T3) |
+| ELEM-09 | `.md` on disk has frontmatter + element section + styles table + truncated outerHTML | manual | — (end-to-end host) | 🟢M verified (UAT T2) |
 
 *Status: ⬜ pending · ✅ green · 🟢M manual-verified · 🟡M manual-deferred · ❌ red.*
 
@@ -60,10 +61,10 @@ source: [05-RESEARCH.md]
 
 ## Wave 0 Requirements
 
-- [ ] `npm install @medv/finder@4.0.2` — must precede any import of the package compiling
-- [ ] `tsconfig.lib.json` `include` extended — add `lib/element-context.ts`, `lib/highlight-draw.ts`
-- [ ] `lib/test/element-context.test.ts` — ELEM-02, 03, 04, 05, 06, 07 (mock-element / mock-fiber driven; do NOT call real `finder` or real DOM)
-- [ ] `lib/test/highlight-draw.test.ts` — ELEM-08 canvas math (mock canvas ctx with recorded calls)
+- [x] `npm install @medv/finder@4.0.2` — must precede any import of the package compiling
+- [x] `tsconfig.lib.json` `include` extended — add `lib/element-context.ts`, `lib/highlight-draw.ts`
+- [x] `lib/test/element-context.test.ts` — ELEM-02, 03, 04, 05, 06, 07 (mock-element / mock-fiber driven; do NOT call real `finder` or real DOM) — 34 tests
+- [x] `lib/test/highlight-draw.test.ts` — ELEM-08 canvas math (mock canvas ctx with recorded calls) — 16 tests
 
 *Pure extraction/format/canvas-math is unit-tested; Chrome-API-bound UI is manual Chrome UAT.*
 
@@ -82,11 +83,26 @@ source: [05-RESEARCH.md]
 
 ## Validation Sign-Off
 
-- [ ] Pure lib functions (selector wrap, context extraction, fiber-name, testId, summary, highlight math) have `node:test` coverage
-- [ ] Type-check (`tsc --noEmit`) green for extension + host
-- [ ] `tsconfig.lib.json` updated; `npm run test:lib` green (existing 32 + new)
-- [ ] No watch-mode flags
-- [ ] Manual Chrome UAT items recorded as HUMAN-UAT (Success Criteria 1–4)
-- [ ] `nyquist_compliant: true` set in frontmatter once Wave 0 lands
+- [x] Pure lib functions (selector wrap, context extraction, fiber-name, testId, summary, highlight math) have `node:test` coverage
+- [x] Type-check (`tsc --noEmit`) green for extension + host
+- [x] `tsconfig.lib.json` updated; `npm run test:lib` green (83 tests, 0 fail)
+- [x] No watch-mode flags
+- [x] Manual Chrome UAT items recorded as HUMAN-UAT (Success Criteria 1–4 — 4/4 passed)
+- [x] `nyquist_compliant: true` set in frontmatter once Wave 0 lands
 
-**Approval:** pending
+**Approval:** verified 2026-06-03
+
+---
+
+## Validation Audit 2026-06-03
+
+| Metric | Count |
+|--------|-------|
+| Gaps found | 0 |
+| Resolved | 0 |
+| Escalated | 0 |
+
+All 7 automated requirements (ELEM-02→08) COVERED by green `node:test` suites
+(`element-context.test.ts` 34 tests, `highlight-draw.test.ts` 16 tests; 83/83 total pass).
+All 3 Chrome-runtime requirements (ELEM-01, ELEM-08 `+1.png`, ELEM-09) manual-verified
+in 05-HUMAN-UAT.md (4/4 passed). No gaps — auditor not spawned.
