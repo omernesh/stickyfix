@@ -2,7 +2,7 @@
 
 ## Overview
 
-Eight phases deliver a Chrome MV3 extension + localhost host that turns on-page sticky notes into ordered markdown files on disk, readable by any AI coding agent. The delivery order is shaped by three architectural invariants established in research: GPL clean-room hygiene is enforced from the first commit (Phase 1), the service-worker-as-sole-HTTP-client boundary is proven with a dummy relay before any real UI ships (Phase 3), and the DPR-correct capture utility trio is built once in Phase 4 and inherited by Phases 5 and 6. The result is an end-to-end vertical slice (free note written to disk) that works at the end of Phase 4, well before element capture and region capture are layered on.
+Nine phases deliver a Chrome MV3 extension + localhost host that turns on-page sticky notes into ordered markdown files on disk, readable by any AI coding agent. The delivery order is shaped by three architectural invariants established in research: GPL clean-room hygiene is enforced from the first commit (Phase 1), the service-worker-as-sole-HTTP-client boundary is proven with a dummy relay before any real UI ships (Phase 3), and the DPR-correct capture utility trio is built once in Phase 4 and inherited by Phases 5 and 6. The result is an end-to-end vertical slice (free note written to disk) that works at the end of Phase 4, well before element capture and region capture are layered on.
 
 ## Phases
 
@@ -21,6 +21,7 @@ Decimal phases appear between their surrounding integers in numeric order.
 - [ ] **Phase 6: Region Capture + Visual Design** - Camera tool drag-marquee crop; full paper-aesthetic sticky-note UI inside shadow DOM
 - [ ] **Phase 7: review-notes Skill + Docs** - Portable AI skill ships; README with demo GIF; clean-room provenance documented
 - [ ] **Phase 8: Hardening + Pre-Release Audit** - All error paths surface toasts; concurrent-Send stress test; GPL grep audit; idle-eviction regression pass
+- [ ] **Phase 9: Turnkey Onboarding & Cross-Browser Distribution** - One-step installer (host + extension), automatic/one-click token pairing (no manual copy-paste), host auto-start, clean uninstall; documented Edge/Firefox/Safari packaging path
 
 ## Phase Details
 
@@ -212,10 +213,33 @@ Plans:
 
 **Plans**: TBD
 
+### Phase 9: Turnkey Onboarding & Cross-Browser Distribution
+
+**Goal**: A first-time user goes from zero to a working note-on-disk in one step — a double-click installer (or single bootstrap command) installs and auto-starts the host and loads the extension, and clicking the extension icon pairs with the running host automatically (no manual token copy-paste) — without weakening the 127.0.0.1-bind + token + origin-trust security model.
+**Mode:** mvp
+**Depends on**: Phase 8 (package and distribute a hardened, documented product)
+**Requirements**: ONB-01, ONB-02, ONB-03, ONB-04, ONB-05, ONB-06
+**Success Criteria** (what must be TRUE):
+
+  1. A fresh machine reaches "note written to disk" via a single turnkey step (double-click installer or one bootstrap command) — no repo clone, no `npm install`, no manual terminal command (per-OS packaging; not Windows-only)
+  2. The user never sees or copies a token: clicking the extension icon auto-pairs (or one-click "Pair") with the running host and persists the token
+  3. Auto-pairing is loopback-confined and time-boxed (or native-messaging-based) — a scripted arbitrary web origin cannot obtain the token or write a note (security model proven intact)
+  4. The host auto-starts / is discoverable with no manual terminal step; uninstall removes host artifacts + native-messaging manifests with no orphan processes or stray config
+  5. (stretch) A documented packaging path exists for Edge (Chromium drop-in), Firefox, and Safari
+
+**Open design questions** (for `/gsd:discuss-phase 9`):
+  - Packaging tech: per-OS installer (NSIS/.exe, .pkg, .deb/sh) vs. cross-platform `npx stickyfix init` bootstrapper vs. `pkg`/SEA single binary — must satisfy the cross-platform constraint (no Windows-only deliverable)
+  - Pairing channel: **native messaging** (installer registers the manifest; no HTTP token at all) vs. **time-boxed loopback `/pair` endpoint** (host exposes token only within an N-second window after launch, SW fetches it) vs. `chrome.storage.managed` policy injection
+  - Host lifecycle: tray app / OS service / native-messaging-spawned-on-demand — and how it learns the project `--root`
+  - Cross-browser scope: promote FUT-01 (Firefox/Safari) here, or keep stretch/Edge-only
+
+**Plans**: TBD
+**UI hint**: yes (popup pairing flow)
+
 ## Progress
 
 **Execution Order:**
-Phases execute in numeric order: 1 → 2 → 3 → 4 → 5 → 6 → 7 → 8
+Phases execute in numeric order: 1 → 2 → 3 → 4 → 5 → 6 → 7 → 8 → 9
 
 | Phase | Plans Complete | Status | Completed |
 |-------|----------------|--------|-----------|
@@ -227,3 +251,4 @@ Phases execute in numeric order: 1 → 2 → 3 → 4 → 5 → 6 → 7 → 8
 | 6. Region Capture + Visual Design | 0/TBD | Not started | - |
 | 7. review-notes Skill + Docs | 0/TBD | Not started | - |
 | 8. Hardening + Pre-Release Audit | 0/TBD | Not started | - |
+| 9. Turnkey Onboarding & Cross-Browser Distribution | 0/TBD | Not started | - |

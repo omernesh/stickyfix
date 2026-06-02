@@ -99,13 +99,22 @@ Requirements for initial release. Each maps to roadmap phases.
 - [ ] **DOC-01**: Root README has install + usage instructions and a demo GIF
 - [ ] **DOC-02**: README documents the clean-room MIT provenance and confirms no GPL code present
 
+### Onboarding & Turnkey Distribution (ONB)
+
+- [ ] **ONB-01**: A turnkey, one-step setup (double-click installer / single bootstrap command, per-OS — not Windows-only) installs the host and the browser extension without manual repo cloning, `npm install`, or terminal steps
+- [ ] **ONB-02**: The user never manually copies or pastes a token — clicking the extension icon obtains and stores the running host's token automatically (auto-pair) or via a single one-click "Pair" action
+- [ ] **ONB-03**: Auto-pairing preserves the security model — an arbitrary web origin can NEVER obtain the token or write notes; pairing happens over a loopback-only, time-boxed window or a native-messaging channel, with the `127.0.0.1`-bind and origin-trust invariants intact
+- [ ] **ONB-04**: The host is auto-started / discoverable without the user running a manual terminal command (launcher, tray app, or native-messaging-spawned process)
+- [ ] **ONB-05**: Uninstall / teardown is clean — removes host artifacts and native-messaging manifests, leaves no orphan processes or stray registry/config entries
+- [ ] **ONB-06**: (cross-browser, stretch) A documented packaging path covers Edge (Chromium drop-in), Firefox, and Safari — promotes FUT-01 into scope
+
 ## v2 Requirements
 
 Deferred to future release. Tracked but not in current roadmap.
 
 ### Future (FUT)
 
-- **FUT-01**: Firefox/Safari port (keep code port-friendly, don't build)
+- **FUT-01**: Firefox/Safari port (keep code port-friendly, don't build) — *may be promoted by ONB-06 (Phase 9)*
 - **FUT-02**: Full-page (scrolling) screenshot capture
 - **FUT-03**: Shadow-DOM deep traversal for element capture
 - **FUT-04**: Publish `stickyfix-host` as an npm `bin`
@@ -193,15 +202,21 @@ Which phases cover which requirements. Updated during roadmap creation.
 | SKILL-05 | Phase 7 | Pending |
 | DOC-01 | Phase 7 | Pending |
 | DOC-02 | Phase 7 | Pending |
+| ONB-01 | Phase 9 | Pending |
+| ONB-02 | Phase 9 | Pending |
+| ONB-03 | Phase 9 | Pending |
+| ONB-04 | Phase 9 | Pending |
+| ONB-05 | Phase 9 | Pending |
+| ONB-06 | Phase 9 | Pending |
 
 **Coverage:**
 
-- v1 requirements: 62 total (BUILD×5 + HOST×13 + EXT×11 + FREE×4 + ELEM×9 + CAM×6 + UI×4 + REL×3 + SKILL×5 + DOC×2)
-- Mapped to phases: 62
+- v1 requirements: 68 total (BUILD×5 + HOST×13 + EXT×11 + FREE×4 + ELEM×9 + CAM×6 + UI×4 + REL×3 + SKILL×5 + DOC×2 + ONB×6)
+- Mapped to phases: 68
 - Unmapped: 0 ✓
 
-Note: The requirements document header previously stated 56 total; the actual count from enumerated REQ-IDs is 62. All 62 are mapped.
+Note: The requirements document header previously stated 56 total; the original enumerated count was 62. Phase 9 (Onboarding & Turnkey Distribution) adds the ONB×6 family → 68 total. All 68 are mapped.
 
 ---
 *Requirements defined: 2026-05-31*
-*Last updated: 2026-05-31 — traceability populated after roadmap creation*
+*Last updated: 2026-06-03 — added ONB family (Phase 9: Turnkey Onboarding & Cross-Browser Distribution)*
