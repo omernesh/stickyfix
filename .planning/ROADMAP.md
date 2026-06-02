@@ -158,7 +158,7 @@ Plans:
 
 **Wave 1** *(blocked on Wave 0)*
 
-- [ ] 05-02-PLAN.md — Pick-mode slice: 🎯 chip button + hover-highlight overlay (picker.ts) + cursor/overlay CSS (ELEM-01)
+- [x] 05-02-PLAN.md — Pick-mode slice: 🎯 chip button + hover-highlight overlay (picker.ts) + cursor/overlay CSS (ELEM-01)
 
 **Wave 2** *(blocked on Waves 0+1)*
 
@@ -223,7 +223,7 @@ Phases execute in numeric order: 1 → 2 → 3 → 4 → 5 → 6 → 7 → 8
 | 2. Host MVP | 3/3 | Complete    | 2026-05-31 |
 | 3. Extension Skeleton + SW Relay Proof | 4/4 | Complete    | 2026-05-31 |
 | 4. Free-Note Mode + Capture Utilities | 3/3 | Complete    | 2026-06-01 |
-| 5. Element-Note Mode + Rich Context Capture | 1/3 | In Progress|  |
+| 5. Element-Note Mode + Rich Context Capture | 2/3 | In Progress|  |
 | 6. Region Capture + Visual Design | 0/TBD | Not started | - |
 | 7. review-notes Skill + Docs | 0/TBD | Not started | - |
 | 8. Hardening + Pre-Release Audit | 0/TBD | Not started | - |

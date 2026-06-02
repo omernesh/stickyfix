@@ -4,13 +4,13 @@ milestone: v1.0
 milestone_name: milestone
 status: executing
 stopped_at: Phase 5 UI-SPEC approved
-last_updated: "2026-06-02T16:23:55.055Z"
+last_updated: "2026-06-02T16:42:49.514Z"
 last_activity: 2026-06-02
 progress:
   total_phases: 8
   completed_phases: 4
   total_plans: 16
-  completed_plans: 14
+  completed_plans: 15
   percent: 50
 ---
 
@@ -26,7 +26,7 @@ See: .planning/PROJECT.md (updated 2026-05-31)
 ## Current Position
 
 Phase: 05 (element-note-mode-rich-context-capture) — EXECUTING
-Plan: 2 of 3
+Plan: 3 of 3
 Status: Ready to execute
 Last activity: 2026-06-02
 
@@ -64,6 +64,7 @@ Progress: [██░░░░░░░░] 22%
 | Phase 03 P04 | 20 minutes | 2 tasks | 4 files |
 | Phase 04 P03 | 8 | 1 tasks | 1 files |
 | Phase 05 P01 | 427 | 3 tasks | 7 files |
+| Phase 05 P05-02 | 236s | 2 tasks | 3 files |
 
 ## Accumulated Context
 
@@ -88,6 +89,9 @@ Recent decisions affecting current work:
 - [Phase ?]: WXT auto-injects CSS into shadow root for runtime content scripts
 - [Phase ?]: Added SW echo handler so content scripts can discover their own tabId
 - [Phase ?]: captureElementContext uses typeof window guard for getComputedStyle — graceful no-op under node:test (browser API inside function body per INVARIANT)
+- [Phase ?]: [05-02]: picker.ts is a pure DOM/event module (no chrome.* calls); exitPickMode() idempotent; mousemove guards synchronous before rAF; currentTarget assigned after updateOverlay (T-05-06)
+- [Phase ?]: [05-02]: mountChip gains optional 3rd param onPickerClick?:(el:Element)=>void — existing 2-arg call site unchanged; Plan 03 wires the real callback
+- [Phase ?]: [05-02]: Task 3 Chrome UAT (ELEM-01) DEFERRED-MANUAL (🟡M) to consolidated end-of-phase Chrome session alongside Plan 03 — ELEM-01 NOT yet runtime-verified
 
 ### Pending Todos
 
@@ -98,6 +102,7 @@ None yet.
 - React fiber property names (`__reactFiber`) are internal APIs — plan for graceful omission in Phase 5 if detection fails
 - `interactjs` drag-marquee inside shadow DOM `context` option is not extensively tested in WXT contexts — budget exploration time in Phase 6 planning
 - Windows 125% DPR (fractional) crop correctness requires `Math.round` after multiply — must be tested on developer's machine in Phase 4
+- [05-02] Chrome UAT for ELEM-01 (pick-mode hover overlay / Esc / focus-restore) DEFERRED-MANUAL (🟡M) — code-complete + tsc green but NOT runtime-verified; verify in consolidated end-of-phase Chrome session alongside Plan 03
 
 ## Deferred Items
 
@@ -113,6 +118,6 @@ None yet.
 
 ## Session Continuity
 
-Last session: 2026-06-02T16:23:34.134Z
+Last session: 2026-06-02T16:39:11.044Z
 Stopped at: Phase 5 UI-SPEC approved
 Resume file: None
