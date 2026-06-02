@@ -13,7 +13,15 @@
         <span id="sfx-wordmark">stickyfix</span>
         <span id="sfx-host-summary"></span>
         <button id="sfx-refresh-btn" type="button">Refresh</button>
+        <button id="sfx-add-btn" type="button" title="Add host by port">+</button>
       </header>
+
+      <!-- Add host form (hidden by default) -->
+      <div id="sfx-add-form" hidden>
+        <input id="sfx-add-port" type="number" value="39240" min="1" max="65535" aria-label="host port" />
+        <button id="sfx-add-submit" type="button">Probe &amp; add</button>
+        <span id="sfx-add-error" hidden role="alert"></span>
+      </div>
 
       <!-- Host list container (one row per discovered host) -->
       <section id="sfx-host-list" aria-label="Discovered hosts"></section>

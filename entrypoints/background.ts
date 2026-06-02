@@ -23,6 +23,8 @@ import type {
   HostEntry,
   AnnotationPayload,
   MsgCaptureTab,
+  MsgAddHost,
+  MsgRemoveHost,
 } from '../lib/types.js';
 import {
   sfxRegistry,
@@ -31,7 +33,7 @@ import {
   sfxPrefs,
   loadStorageState,
 } from '../lib/storage.js';
-import { discoverHosts } from '../lib/discovery.js';
+import { discoverHosts, probePort } from '../lib/discovery.js';
 import { resolveRoute, reconcileRegistry } from '../lib/routing.js';
 
 // ---------------------------------------------------------------------------
@@ -355,6 +357,68 @@ async function handleSendAnnotation(
 }
 
 // ---------------------------------------------------------------------------
+// handleAddHost — probe a specific port and add it to the registry
+// ---------------------------------------------------------------------------
+
+async function handleAddHost(
+  port: number
+): Promise<{ ok: true; host: HostEntry } | { ok: false; error: string }> {
+  if (!Number.isInteger(port) || port < 1 || port > 65535) {
+    return { ok: false, error: 'Invalid port' };
+  }
+
+  let host: HostEntry;
+  try {
+    host = await probePort(port);
+  } catch {
+    return { ok: false, error: 'No stickyfix host responding on port ' + port };
+  }
+
+  // Re-read registry + tokens at handler top (Pitfall 1 — no module-level cache)
+  const [registry, tokens] = await Promise.all([
+    sfxRegistry.getValue(),
+    sfxTokens.getValue(),
+  ]);
+
+  registry[host.name] = { ...host, token: tokens[host.name] ?? null };
+  await sfxRegistry.setValue(registry);
+
+  return { ok: true, host };
+}
+
+// ---------------------------------------------------------------------------
+// handleRemoveHost — remove a host and all its origin mappings from the registry
+// ---------------------------------------------------------------------------
+
+async function handleRemoveHost(
+  name: string
+): Promise<{ ok: true; name: string } | { ok: false; error: string }> {
+  // Re-read all three stores at handler top (Pitfall 1)
+  const [registry, tokens, originMap] = await Promise.all([
+    sfxRegistry.getValue(),
+    sfxTokens.getValue(),
+    sfxOriginMap.getValue(),
+  ]);
+
+  delete registry[name];
+  delete tokens[name];
+
+  for (const origin of Object.keys(originMap)) {
+    if (originMap[origin] === name) {
+      delete originMap[origin];
+    }
+  }
+
+  await Promise.all([
+    sfxRegistry.setValue(registry),
+    sfxTokens.setValue(tokens),
+    sfxOriginMap.setValue(originMap),
+  ]);
+
+  return { ok: true, name };
+}
+
+// ---------------------------------------------------------------------------
 // handleCaptureTab — SW-side handler for SFX_CAPTURE_TAB (Plan 04-03)
 // ---------------------------------------------------------------------------
 
@@ -417,7 +481,7 @@ interface MsgGetTabId {
  */
 chrome.runtime.onMessage.addListener(
   (
-    msg: SfxMessage | MsgSetRoute | MsgGetTabId | MsgCaptureTab,
+    msg: SfxMessage | MsgSetRoute | MsgGetTabId | MsgCaptureTab | MsgAddHost | MsgRemoveHost,
     sender: chrome.runtime.MessageSender,
     sendResponse: (response: unknown) => void
   ): true | void => {
@@ -490,6 +554,22 @@ chrome.runtime.onMessage.addListener(
           );
         return true; // MANDATORY — captureVisibleTab is async (Pitfall 1)
       }
+
+      case SFX_MSG.ADD_HOST:
+        handleAddHost((msg as MsgAddHost).port)
+          .then(sendResponse)
+          .catch((err: unknown) =>
+            sendResponse({ ok: false, error: String(err) })
+          );
+        return true;
+
+      case SFX_MSG.REMOVE_HOST:
+        handleRemoveHost((msg as MsgRemoveHost).name)
+          .then(sendResponse)
+          .catch((err: unknown) =>
+            sendResponse({ ok: false, error: String(err) })
+          );
+        return true;
 
       default:
         // Unknown message type — do not return true (no async response)

@@ -15,7 +15,7 @@
  */
 
 import { SFX_MSG } from '../../lib/types.js';
-import type { HostEntry } from '../../lib/types.js';
+import type { HostEntry, MsgAddHost, MsgRemoveHost } from '../../lib/types.js';
 import { sfxRegistry, sfxTokens, sfxPrefs } from '../../lib/storage.js';
 
 // ---------------------------------------------------------------------------
@@ -27,6 +27,11 @@ const hostSummaryEl = document.getElementById('sfx-host-summary')!;
 const hostListEl = document.getElementById('sfx-host-list')!;
 const emptyStateEl = document.getElementById('sfx-empty-state') as HTMLElement;
 const refreshBtn = document.getElementById('sfx-refresh-btn') as HTMLButtonElement;
+const addBtn = document.getElementById('sfx-add-btn') as HTMLButtonElement;
+const addForm = document.getElementById('sfx-add-form') as HTMLElement;
+const addPortInput = document.getElementById('sfx-add-port') as HTMLInputElement;
+const addSubmitBtn = document.getElementById('sfx-add-submit') as HTMLButtonElement;
+const addErrorEl = document.getElementById('sfx-add-error') as HTMLElement;
 const reviewBtn = document.getElementById('sfx-review-btn') as HTMLButtonElement;
 const toggleErrorEl = document.getElementById('sfx-toggle-error') as HTMLElement;
 const routingLineEl = document.getElementById('sfx-routing-line')!;
@@ -142,6 +147,29 @@ function renderHosts(
     clearBtn.textContent = 'Clear';
     clearBtn.title = 'Clear the saved token';
 
+    // Remove host button — quiet destructive affordance (grey → red on hover)
+    const removeBtn = el('button');
+    removeBtn.type = 'button';
+    removeBtn.className = 'sfx-host-remove';
+    removeBtn.textContent = '−';
+    removeBtn.title = 'Remove "' + name + '"';
+    removeBtn.setAttribute('aria-label', 'Remove host ' + name);
+
+    removeBtn.addEventListener('click', async () => {
+      removeBtn.disabled = true;
+      const msg: MsgRemoveHost = { type: SFX_MSG.REMOVE_HOST, name: host.name };
+      try {
+        await chrome.runtime.sendMessage(msg);
+      } catch {
+        // SW may be restarting — storage may still be updated; re-read anyway
+      }
+      const [allRegistry, allTokensNow] = await Promise.all([
+        sfxRegistry.getValue(),
+        sfxTokens.getValue(),
+      ]);
+      renderHosts(allRegistry, allTokensNow);
+    });
+
     // Apply: persist without re-render, flash a brief ✓ so it's not silent.
     applyBtn.addEventListener('click', async () => {
       await persistToken(true);
@@ -168,13 +196,14 @@ function renderHosts(
       }
     });
 
-    // Right-column wrapper: [token input] over [Apply] [Clear]
+    // Right-column wrapper: [token input] over [Apply] [Clear] [−]
     const tokenWrap = el('div');
     tokenWrap.className = 'sfx-token-wrap';
     const tokenActions = el('div');
     tokenActions.className = 'sfx-token-actions';
     tokenActions.appendChild(applyBtn);
     tokenActions.appendChild(clearBtn);
+    tokenActions.appendChild(removeBtn);
     tokenWrap.appendChild(tokenInput);
     tokenWrap.appendChild(tokenActions);
 
@@ -262,6 +291,63 @@ async function doRefresh(): Promise<void> {
 }
 
 refreshBtn.addEventListener('click', doRefresh);
+
+// ---------------------------------------------------------------------------
+// Add-host form — wire + button and submit
+// ---------------------------------------------------------------------------
+
+addBtn.addEventListener('click', () => {
+  const nowHidden = !addForm.hidden;
+  addForm.hidden = nowHidden;
+  addErrorEl.hidden = true;
+  addErrorEl.textContent = '';
+  if (!nowHidden) {
+    addPortInput.focus();
+  }
+});
+
+async function doAddHost(): Promise<void> {
+  addErrorEl.hidden = true;
+  addErrorEl.textContent = '';
+
+  const port = parseInt(addPortInput.value, 10);
+  const msg: MsgAddHost = { type: SFX_MSG.ADD_HOST, port };
+
+  addSubmitBtn.disabled = true;
+  addSubmitBtn.textContent = 'Probing…';
+
+  let resp: { ok: boolean; host?: HostEntry; error?: string } | null = null;
+  try {
+    resp = await chrome.runtime.sendMessage(msg);
+  } catch (err) {
+    resp = { ok: false, error: String(err) };
+  } finally {
+    addSubmitBtn.disabled = false;
+    addSubmitBtn.textContent = 'Probe & add';
+  }
+
+  if (resp && resp.ok) {
+    // Success: hide + clear the form, re-render host list
+    addForm.hidden = true;
+    addPortInput.value = '39240';
+    const [allRegistry, allTokensNow] = await Promise.all([
+      sfxRegistry.getValue(),
+      sfxTokens.getValue(),
+    ]);
+    renderHosts(allRegistry, allTokensNow);
+  } else {
+    addErrorEl.textContent = resp?.error ?? 'Unknown error';
+    addErrorEl.hidden = false;
+  }
+}
+
+addSubmitBtn.addEventListener('click', () => void doAddHost());
+
+addPortInput.addEventListener('keydown', (e: KeyboardEvent) => {
+  if (e.key === 'Enter') {
+    void doAddHost();
+  }
+});
 
 // ---------------------------------------------------------------------------
 // Review Mode toggle — state helpers

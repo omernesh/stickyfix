@@ -174,6 +174,30 @@ body {
   background: #fef2f2;
 }
 
+/* Remove host button — quiet destructive affordance */
+.sfx-host-remove {
+  font-size: 14px;
+  line-height: 1;
+  padding: 2px 6px;
+  border: 1px solid #d0d0d0;
+  border-radius: 4px;
+  background: #f5f5f5;
+  color: #666;
+  cursor: pointer;
+  font-weight: 600;
+}
+
+.sfx-host-remove:hover {
+  background: #fef2f2;
+  color: #dc2626;
+  border-color: #f0b4b4;
+}
+
+.sfx-host-remove:disabled {
+  cursor: not-allowed;
+  color: #aaa;
+}
+
 /* ── Empty state ──────────────────────────────────────────────────────────── */
 
 #sfx-empty-state {
@@ -217,6 +241,76 @@ body {
 
 #sfx-refresh-btn:hover {
   background: #eee;
+}
+
+/* + (add host) button — small square, header-height */
+#sfx-add-btn {
+  padding: 4px 8px;
+  font-size: 14px;
+  font-weight: 700;
+  line-height: 1;
+  border: 1px solid #ccc;
+  border-radius: 4px;
+  background: #f5f5f5;
+  color: #333;
+  cursor: pointer;
+}
+
+#sfx-add-btn:hover {
+  background: #eee;
+}
+
+/* Add-host inline form — compact row */
+#sfx-add-form {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  padding: 8px 12px;
+  background: #f8f8f8;
+  border-bottom: 1px solid #e0e0e0;
+  flex-wrap: wrap;
+}
+
+#sfx-add-port {
+  width: 72px;
+  padding: 3px 6px;
+  font-size: 12px;
+  font-family: ui-monospace, 'Cascadia Code', 'Courier New', monospace;
+  border: 1px solid #d0d0d0;
+  border-radius: 4px;
+  background: #fff;
+  color: #333;
+  outline: none;
+}
+
+#sfx-add-port:focus {
+  border-color: #888;
+}
+
+#sfx-add-submit {
+  padding: 3px 10px;
+  font-size: 12px;
+  border: 1px solid #ccc;
+  border-radius: 4px;
+  background: #f5f5f5;
+  color: #333;
+  cursor: pointer;
+}
+
+#sfx-add-submit:hover {
+  background: #eee;
+}
+
+#sfx-add-submit:disabled {
+  cursor: not-allowed;
+  color: #999;
+}
+
+#sfx-add-error {
+  font-size: 12px;
+  color: #dc2626;
+  flex-basis: 100%;
+  margin-top: 2px;
 }
 
 /* ── Review Mode toggle ───────────────────────────────────────────────────── */

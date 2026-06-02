@@ -59,6 +59,8 @@ export const SFX_MSG = {
   GET_ROUTE: 'SFX_GET_ROUTE',
   SEND_ANNOTATION: 'SFX_SEND_ANNOTATION',
   REFRESH_HOSTS: 'SFX_REFRESH_HOSTS',
+  ADD_HOST: 'SFX_ADD_HOST',
+  REMOVE_HOST: 'SFX_REMOVE_HOST',
 } as const;
 
 export type SfxMsgType = (typeof SFX_MSG)[keyof typeof SFX_MSG];
@@ -114,13 +116,25 @@ export interface MsgRefreshHosts {
   type: typeof SFX_MSG.REFRESH_HOSTS;
 }
 
+export interface MsgAddHost {
+  type: typeof SFX_MSG.ADD_HOST;
+  port: number;
+}
+
+export interface MsgRemoveHost {
+  type: typeof SFX_MSG.REMOVE_HOST;
+  name: string;
+}
+
 /** Discriminated union of all messages the SW handles */
 export type SfxMessage =
   | MsgEnterReview
   | MsgExitReview
   | MsgGetRoute
   | MsgSendAnnotation
-  | MsgRefreshHosts;
+  | MsgRefreshHosts
+  | MsgAddHost
+  | MsgRemoveHost;
 
 // ---------------------------------------------------------------------------
 // Response shapes
