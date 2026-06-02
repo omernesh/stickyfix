@@ -4,13 +4,13 @@ milestone: v1.0
 milestone_name: milestone
 status: executing
 stopped_at: Phase 5 UI-SPEC approved
-last_updated: "2026-06-02T13:53:40.199Z"
-last_activity: 2026-06-02 -- Phase 05 planning complete
+last_updated: "2026-06-02T16:23:55.055Z"
+last_activity: 2026-06-02
 progress:
   total_phases: 8
   completed_phases: 4
   total_plans: 16
-  completed_plans: 13
+  completed_plans: 14
   percent: 50
 ---
 
@@ -21,14 +21,14 @@ progress:
 See: .planning/PROJECT.md (updated 2026-05-31)
 
 **Core value:** A note dropped on a page reliably becomes a precise, context-rich .md file on disk in the right project's notes/ folder — never silently lost.
-**Current focus:** Phase 04 — free-note-mode-capture-utilities
+**Current focus:** Phase 05 — element-note-mode-rich-context-capture
 
 ## Current Position
 
-Phase: 5
-Plan: Not started
+Phase: 05 (element-note-mode-rich-context-capture) — EXECUTING
+Plan: 2 of 3
 Status: Ready to execute
-Last activity: 2026-06-02 -- Phase 05 planning complete
+Last activity: 2026-06-02
 
 Progress: [██░░░░░░░░] 22%
 
@@ -63,6 +63,7 @@ Progress: [██░░░░░░░░] 22%
 | Phase 03 P03 | 15 | 2 tasks | 3 files |
 | Phase 03 P04 | 20 minutes | 2 tasks | 4 files |
 | Phase 04 P03 | 8 | 1 tasks | 1 files |
+| Phase 05 P01 | 427 | 3 tasks | 7 files |
 
 ## Accumulated Context
 
@@ -86,6 +87,7 @@ Recent decisions affecting current work:
 - [Phase ?]: chrome.scripting used for executeScript files:[] — WXT browser.scripting restricts to ScriptPublicPath[]
 - [Phase ?]: WXT auto-injects CSS into shadow root for runtime content scripts
 - [Phase ?]: Added SW echo handler so content scripts can discover their own tabId
+- [Phase ?]: captureElementContext uses typeof window guard for getComputedStyle — graceful no-op under node:test (browser API inside function body per INVARIANT)
 
 ### Pending Todos
 
@@ -111,6 +113,6 @@ None yet.
 
 ## Session Continuity
 
-Last session: 2026-06-02T13:04:18.645Z
+Last session: 2026-06-02T16:23:34.134Z
 Stopped at: Phase 5 UI-SPEC approved
-Resume file: .planning/phases/05-element-note-mode-rich-context-capture/05-UI-SPEC.md
+Resume file: None

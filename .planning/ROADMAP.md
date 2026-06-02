@@ -154,7 +154,7 @@ Plans:
 Plans:
 **Wave 0**
 
-- [ ] 05-01-PLAN.md — Install @medv/finder + pure lib (element-context.ts, highlight-draw.ts) + node:test (ELEM-02/03/04/05/06/07/08)
+- [x] 05-01-PLAN.md — Install @medv/finder + pure lib (element-context.ts, highlight-draw.ts) + node:test (ELEM-02/03/04/05/06/07/08)
 
 **Wave 1** *(blocked on Wave 0)*
 
@@ -163,6 +163,7 @@ Plans:
 **Wave 2** *(blocked on Waves 0+1)*
 
 - [ ] 05-03-PLAN.md — Capture+write slice: openElementCard context header + +1.png box-draw Send pipeline + index wiring (ELEM-02/03/04/05/06/07/08/09)
+
 **UI hint**: yes
 
 ### Phase 6: Region Capture + Visual Design
@@ -222,7 +223,7 @@ Phases execute in numeric order: 1 → 2 → 3 → 4 → 5 → 6 → 7 → 8
 | 2. Host MVP | 3/3 | Complete    | 2026-05-31 |
 | 3. Extension Skeleton + SW Relay Proof | 4/4 | Complete    | 2026-05-31 |
 | 4. Free-Note Mode + Capture Utilities | 3/3 | Complete    | 2026-06-01 |
-| 5. Element-Note Mode + Rich Context Capture | 0/3 | Not started | - |
+| 5. Element-Note Mode + Rich Context Capture | 1/3 | In Progress|  |
 | 6. Region Capture + Visual Design | 0/TBD | Not started | - |
 | 7. review-notes Skill + Docs | 0/TBD | Not started | - |
 | 8. Hardening + Pre-Release Audit | 0/TBD | Not started | - |

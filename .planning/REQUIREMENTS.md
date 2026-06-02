@@ -55,13 +55,13 @@ Requirements for initial release. Each maps to roadmap phases.
 ### Element-Note Mode (ELEM)
 
 - [ ] **ELEM-01**: The 🎯 picker enters pick mode; hovering highlights the element under cursor with an outline + `tag · WxH` label; `Esc` cancels
-- [ ] **ELEM-02**: Clicking an element captures a robust unique selector via `@medv/finder`
-- [ ] **ELEM-03**: Capture includes tag, id, classList, name, type, href, role, ariaLabel + aria-*, collapsed text (~1000 char truncation noted)
-- [ ] **ELEM-04**: Capture includes rect (rounded + page-absolute), a curated `computedStyles` set (single config constant), truncated `outerHTML` (~2000 chars), and full `dataset`
-- [ ] **ELEM-05**: Best-effort React fiber detection walks up to the nearest named component and records its display name (omitted if undetectable)
-- [ ] **ELEM-06**: Capture includes `nearestTestId` (closest ancestor-or-self `data-testid`)
-- [ ] **ELEM-07**: The post-it pre-fills with a compact context summary; full detail goes into the `.md`
-- [ ] **ELEM-08**: On Send, an auto element-highlight screenshot (`+1`) is captured with the highlight box drawn on the selected element
+- [x] **ELEM-02**: Clicking an element captures a robust unique selector via `@medv/finder`
+- [x] **ELEM-03**: Capture includes tag, id, classList, name, type, href, role, ariaLabel + aria-*, collapsed text (~1000 char truncation noted)
+- [x] **ELEM-04**: Capture includes rect (rounded + page-absolute), a curated `computedStyles` set (single config constant), truncated `outerHTML` (~2000 chars), and full `dataset`
+- [x] **ELEM-05**: Best-effort React fiber detection walks up to the nearest named component and records its display name (omitted if undetectable)
+- [x] **ELEM-06**: Capture includes `nearestTestId` (closest ancestor-or-self `data-testid`)
+- [x] **ELEM-07**: The post-it pre-fills with a compact context summary; full detail goes into the `.md`
+- [x] **ELEM-08**: On Send, an auto element-highlight screenshot (`+1`) is captured with the highlight box drawn on the selected element
 - [ ] **ELEM-09**: The element note `.md` includes selector + react_component frontmatter, a curated computed-styles table, and truncated outerHTML
 
 ### Region Capture (CAM)
@@ -165,13 +165,13 @@ Which phases cover which requirements. Updated during roadmap creation.
 | FREE-03 | Phase 4 | Complete |
 | FREE-04 | Phase 4 | Complete |
 | ELEM-01 | Phase 5 | Pending |
-| ELEM-02 | Phase 5 | Pending |
-| ELEM-03 | Phase 5 | Pending |
-| ELEM-04 | Phase 5 | Pending |
-| ELEM-05 | Phase 5 | Pending |
-| ELEM-06 | Phase 5 | Pending |
-| ELEM-07 | Phase 5 | Pending |
-| ELEM-08 | Phase 5 | Pending |
+| ELEM-02 | Phase 5 | Complete |
+| ELEM-03 | Phase 5 | Complete |
+| ELEM-04 | Phase 5 | Complete |
+| ELEM-05 | Phase 5 | Complete |
+| ELEM-06 | Phase 5 | Complete |
+| ELEM-07 | Phase 5 | Complete |
+| ELEM-08 | Phase 5 | Complete |
 | ELEM-09 | Phase 5 | Pending |
 | CAM-01 | Phase 6 | Pending |
 | CAM-02 | Phase 6 | Pending |
