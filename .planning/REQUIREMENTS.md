@@ -30,6 +30,9 @@ Requirements for initial release. Each maps to roadmap phases.
 - [x] **HOST-11**: Body size cap of 12 MB; larger payloads rejected with 413
 - [x] **HOST-12**: Notes dir is created if missing with a `.gitkeep`; token also written to gitignored `<root>/.stickyfix-token`
 - [x] **HOST-13**: Host accepts `--origin` (repeatable), `--name`, `--notes-dir`, `--token` (else `STICKYFIX_TOKEN` env, else random UUID) via `util.parseArgs`
+- [ ] **HOST-14**: `GET /annotations?url=<page-url>` returns the notes whose frontmatter `url` path-matches (query string ignored), each with serial, mode, status, selector, rect, text, and screenshot paths read from `.md` frontmatter; token-gated
+- [ ] **HOST-15**: `PUT /annotation/<serial>` overwrites the body of the existing note in place (resolves serial → `<serial>-*.md`, preserves frontmatter + screenshots, re-marks status `unread`); path-confined, token-gated, 12 MB cap
+- [ ] **HOST-16**: `DELETE /annotation/<serial>` removes the note `.md` and its `+N.png` screenshots; path-confined, token-gated; 404 if serial not found
 
 ### Extension Shell & Routing (EXT)
 
@@ -79,6 +82,15 @@ Requirements for initial release. Each maps to roadmap phases.
 - [ ] **UI-02**: Post-it has a genuine sticky-note aesthetic — warm paper color, subtle shadow, legible type, smooth drag
 - [ ] **UI-03**: A colored header strip encodes mode (free vs element distinct colors)
 - [ ] **UI-04**: Success and error states surface as styled toasts
+
+### Persistent Pins (PIN)
+
+- [ ] **PIN-01**: On entering Review Mode, the extension fetches notes for the current page (exact URL path match, query ignored) via `GET /annotations` and renders one persistent on-page pin per note
+- [ ] **PIN-02**: Element-note pins anchor to the stored `@medv/finder` selector (re-queried on load), repositioning on scroll/resize; free-note pins float at the stored viewport coords (page-level, no anchor)
+- [ ] **PIN-03**: An orphaned pin (selector matches nothing) renders greyed/dashed at its last-known page-absolute rect with a tooltip; it is never hidden (a note is never silently lost)
+- [ ] **PIN-04**: Pins encode mode (element vs free — same header colors as the cards, UI-03) and unread/read state (read = `*.read.md`); hover shows a note-text preview
+- [ ] **PIN-05**: Clicking a pin opens a card to view, edit, or delete the note
+- [ ] **PIN-06**: Editing saves via `PUT /annotation/<serial>` (overwrite in place); deleting via `DELETE /annotation/<serial>` (file + screenshots) behind a confirm guard; the on-page pin updates/disappears accordingly
 
 ### Reliability (REL)
 
@@ -158,6 +170,9 @@ Which phases cover which requirements. Updated during roadmap creation.
 | HOST-11 | Phase 2 | Complete |
 | HOST-12 | Phase 2 | Complete |
 | HOST-13 | Phase 2 | Complete |
+| HOST-14 | Phase 6 | Pending |
+| HOST-15 | Phase 6 | Pending |
+| HOST-16 | Phase 6 | Pending |
 | EXT-01 | Phase 3 | Complete |
 | EXT-02 | Phase 3 | Complete |
 | EXT-03 | Phase 3 | Complete |
@@ -192,6 +207,12 @@ Which phases cover which requirements. Updated during roadmap creation.
 | UI-02 | Phase 6 | Pending |
 | UI-03 | Phase 6 | Pending |
 | UI-04 | Phase 6 | Pending |
+| PIN-01 | Phase 6 | Pending |
+| PIN-02 | Phase 6 | Pending |
+| PIN-03 | Phase 6 | Pending |
+| PIN-04 | Phase 6 | Pending |
+| PIN-05 | Phase 6 | Pending |
+| PIN-06 | Phase 6 | Pending |
 | REL-01 | Phase 8 | Pending |
 | REL-02 | Phase 8 | Pending |
 | REL-03 | Phase 8 | Pending |
@@ -211,12 +232,12 @@ Which phases cover which requirements. Updated during roadmap creation.
 
 **Coverage:**
 
-- v1 requirements: 68 total (BUILD×5 + HOST×13 + EXT×11 + FREE×4 + ELEM×9 + CAM×6 + UI×4 + REL×3 + SKILL×5 + DOC×2 + ONB×6)
-- Mapped to phases: 68
+- v1 requirements: 77 total (BUILD×5 + HOST×16 + EXT×11 + FREE×4 + ELEM×9 + CAM×6 + UI×4 + PIN×6 + REL×3 + SKILL×5 + DOC×2 + ONB×6)
+- Mapped to phases: 77
 - Unmapped: 0 ✓
 
-Note: The requirements document header previously stated 56 total; the original enumerated count was 62. Phase 9 (Onboarding & Turnkey Distribution) adds the ONB×6 family → 68 total. All 68 are mapped.
+Note: The requirements document header previously stated 56 total; the original enumerated count was 62. Phase 9 (Onboarding) added ONB×6 → 68. Phase 6 scope expansion (Persistent Pins) adds PIN×6 + host CRUD HOST-14/15/16 → 77 total. All 77 are mapped.
 
 ---
 *Requirements defined: 2026-05-31*
-*Last updated: 2026-06-03 — added ONB family (Phase 9: Turnkey Onboarding & Cross-Browser Distribution)*
+*Last updated: 2026-06-03 — Phase 6 expanded with Persistent Pins (PIN×6 + HOST-14/15/16 CRUD); ONB family added for Phase 9*

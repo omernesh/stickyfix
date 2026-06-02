@@ -18,7 +18,7 @@ Decimal phases appear between their surrounding integers in numeric order.
 - [x] **Phase 3: Extension Skeleton + SW Relay Proof** - Popup, host discovery, chrome.storage.local state, on-demand injection, dummy POST relay proven end-to-end (completed 2026-05-31)
 - [x] **Phase 4: Free-Note Mode + Capture Utilities** - Draggable FAB → post-it → Send → .md on disk; DPR crop, double-rAF flush, captureVisibleTab relay established as reusable utilities (completed 2026-05-31)
 - [x] **Phase 5: Element-Note Mode + Rich Context Capture** - Element picker with @medv/finder selector, React fiber, computed styles, outerHTML, auto-highlight screenshot (completed 2026-06-02)
-- [ ] **Phase 6: Region Capture + Visual Design** - Camera tool drag-marquee crop; full paper-aesthetic sticky-note UI inside shadow DOM
+- [ ] **Phase 6: Region Capture + Visual Design + Persistent Pins** - Camera tool drag-marquee crop; full paper-aesthetic sticky-note UI inside shadow DOM; clickable on-page note pins (rehydrated from disk) with view/edit/delete via host CRUD
 - [ ] **Phase 7: review-notes Skill + Docs** - Portable AI skill ships; README with demo GIF; clean-room provenance documented
 - [ ] **Phase 8: Hardening + Pre-Release Audit** - All error paths surface toasts; concurrent-Send stress test; GPL grep audit; idle-eviction regression pass
 - [ ] **Phase 9: Turnkey Onboarding & Cross-Browser Distribution** - One-step installer (host + extension), automatic/one-click token pairing (no manual copy-paste), host auto-start, clean uninstall; documented Edge/Firefox/Safari packaging path
@@ -167,18 +167,22 @@ Plans:
 
 **UI hint**: yes
 
-### Phase 6: Region Capture + Visual Design
+### Phase 6: Region Capture + Visual Design + Persistent Pins
 
-**Goal**: Every note (free and element) has a working camera tool that lets the developer drag a marquee to capture a DPR-correct region crop, attach multiple deletable thumbnails, and the entire injected UI has a polished paper-aesthetic sticky-note look inside shadow DOM isolation.
+**Goal**: Every note (free and element) has a working camera tool that lets the developer drag a marquee to capture a DPR-correct region crop and attach multiple deletable thumbnails; the entire injected UI has a polished paper-aesthetic sticky-note look inside shadow DOM isolation; and every note left on a page reappears as a clickable on-page pin (rehydrated from the notes on disk via a new host read endpoint) that can be viewed, edited (overwrite in place), or deleted (file + screenshots) — so a review becomes a durable, revisitable map of pending feedback.
 **Mode:** mvp
 **Depends on**: Phase 5
-**Requirements**: CAM-01, CAM-02, CAM-03, CAM-04, CAM-05, CAM-06, UI-01, UI-02, UI-03, UI-04
+**Requirements**: CAM-01, CAM-02, CAM-03, CAM-04, CAM-05, CAM-06, UI-01, UI-02, UI-03, UI-04, PIN-01, PIN-02, PIN-03, PIN-04, PIN-05, PIN-06, HOST-14, HOST-15, HOST-16
 **Success Criteria** (what must be TRUE):
 
   1. Clicking the camera tool dims the page with a scrim and switches the cursor to a crosshair; Esc or a sub-6px drag cancels without capturing
   2. Dragging a region and releasing attaches a deletable thumbnail to the current note; a second drag attaches a second thumbnail (+2.png)
   3. The sent .md records +1.png, +2.png paths in frontmatter and body; the host writes the PNG files correctly
   4. Post-it cards have a warm paper aesthetic, smooth drag, colored header strip (free vs element distinct), and no CSS bleed from or to the host page (shadow DOM isolation verified on a Tailwind-heavy and a CSS-reset-heavy page)
+  5. Re-entering Review Mode on a page renders one pin per note for that exact URL path (host reads selector/rect/mode/status/url from .md frontmatter); element pins anchor to the stored selector (reposition on scroll/resize), free pins float at stored viewport coords, and an orphaned pin shows greyed at its last-known rect (never hidden)
+  6. Clicking a pin opens a card to view/edit/delete; editing overwrites the same serial file in place (host PUT, re-marks unread) and deleting removes the .md + its +N.png (host DELETE) behind a confirm guard — both token-gated and path-confined
+
+**Decisions locked** (06-CONTEXT.md): pins are sourced from disk via `GET /annotations` (files = source of truth, survive browser reset); scope by exact URL path (query ignored); edit = `PUT /annotation/<serial>` overwrite-in-place; delete = `DELETE /annotation/<serial>` hard-delete file + screenshots; note id = leading serial (host globs `<serial>-*.md`); orphaned pins shown greyed at last-known rect; free-notes also pinned (floating); pins color-coded by mode + unread/read dot + hover preview.
 
 **Plans**: TBD
 **UI hint**: yes
@@ -248,7 +252,7 @@ Phases execute in numeric order: 1 → 2 → 3 → 4 → 5 → 6 → 7 → 8 →
 | 3. Extension Skeleton + SW Relay Proof | 4/4 | Complete    | 2026-05-31 |
 | 4. Free-Note Mode + Capture Utilities | 3/3 | Complete    | 2026-06-01 |
 | 5. Element-Note Mode + Rich Context Capture | 3/3 | Complete   | 2026-06-02 |
-| 6. Region Capture + Visual Design | 0/TBD | Not started | - |
+| 6. Region Capture + Visual Design + Persistent Pins | 0/TBD | Not started | - |
 | 7. review-notes Skill + Docs | 0/TBD | Not started | - |
 | 8. Hardening + Pre-Release Audit | 0/TBD | Not started | - |
 | 9. Turnkey Onboarding & Cross-Browser Distribution | 0/TBD | Not started | - |
