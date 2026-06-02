@@ -81,6 +81,21 @@ export default defineContentScript({
 
     ui.mount();
 
+    // TOP-LAYER PROMOTION: promote the shadow host into the browser top layer via
+    // the Popover API so it paints above all normal page content regardless of
+    // z-index or DOM order (beats React portals, fixed popovers, dialog elements).
+    // popover="manual" — never light-dismisses on outside click or Esc; the overlay
+    // stays up for the entire Review Mode session.
+    // Graceful fallback: if the Popover API is unsupported (shouldn't happen in
+    // Chrome MV3), the try/catch silently preserves the d63862e z-index behavior.
+    try {
+      const hostEl = ui.shadowHost;
+      hostEl.setAttribute('popover', 'manual');
+      hostEl.showPopover();
+    } catch {
+      // Popover API unsupported — falls back to z-index:2147483647 from d63862e
+    }
+
     // Unmount if the content script context is invalidated (e.g., extension reload)
     ctx.onInvalidated(ui.remove);
 

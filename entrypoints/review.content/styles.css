@@ -24,6 +24,37 @@
   box-sizing: border-box;
 }
 
+/*
+ * TOP-LAYER OVERRIDE: When the host carries the [popover] attribute the
+ * browser UA stylesheet injects defaults that would shrink/box our full-screen
+ * transparent pass-through overlay.  The UA applies:
+ *   position:fixed; inset:0; width:fit-content; height:fit-content;
+ *   margin:auto; border:solid; padding; background:Canvas; overflow:hidden; color:CanvasText
+ *
+ * :host([popover]) / :host(:popover-open) selectors inside the shadow root
+ * have author-level specificity and beat UA styles.  We explicitly restore
+ * every overridden property to match our overlay intent.
+ *
+ * pointer-events:none is kept — chip/FAB/card/toast each set pointer-events:auto
+ * on their own elements so clicks still reach them in the top layer.
+ *
+ * z-index is kept as the fallback value when Popover API is unavailable.
+ */
+:host([popover]),
+:host(:popover-open) {
+  position: fixed;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  margin: 0;
+  border: 0;
+  padding: 0;
+  background: transparent;
+  color: inherit;
+  overflow: visible;
+  pointer-events: none;
+}
+
 #sfx-chip {
   pointer-events: auto;
   position: fixed;
