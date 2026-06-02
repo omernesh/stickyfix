@@ -1,10 +1,11 @@
 ---
 phase: 6
 slug: region-capture-visual-design-persistent-pins
-status: draft
+status: approved
 shadcn_initialized: false
 preset: none
 created: 2026-06-03
+reviewed_at: 2026-06-03
 ---
 
 # Phase 6 — UI Design Contract
@@ -287,8 +288,8 @@ display: block
 **Thumbnail delete button (`.sfx-thumb-del`):**
 ```
 position: absolute
-top: 2px
-right: 2px
+top: 4px
+right: 4px
 width: 16px
 height: 16px
 border-radius: 50%
@@ -427,7 +428,7 @@ On `mouseleave`, hide it. Implemented as a child div, not the browser `title` at
 ```
 /* .sfx-pin-preview */
 position: absolute
-bottom: calc(100% + 6px)           — appears above the pin
+bottom: calc(100% + 4px)           — appears above the pin
 left: 50%
 transform: translateX(-50%)
 max-width: 240px
@@ -456,7 +457,7 @@ If note is a `*.read.md` (status `read`): preview prepends `[read] ` to the text
 using textContent concatenation.
 
 **Hover preview flip:** If the pin is within 130px of the top of the viewport, flip
-preview to `top: calc(100% + 6px)` (appears below the pin instead).
+preview to `top: calc(100% + 4px)` (appears below the pin instead).
 
 ---
 
@@ -647,8 +648,8 @@ Extends Phase 5 copywriting. All Phase 5 copy preserved.
 | Empty thumbnail strip | (no copy — strip is absent when empty) |
 | Pin card header — free | `Free note` |
 | Pin card header — element | `Element note` |
-| Pin card — VIEW footer | `Edit` / `Delete` / `Close` |
-| Pin card — EDIT footer | `Save` / `Cancel` |
+| Pin card — VIEW footer | `Edit note` / `Delete note` / `Close card` |
+| Pin card — EDIT footer | `Save` / `Discard changes` |
 | Pin card — in-flight Save | `Saving…` |
 | Pin card — DELETE confirm text | `Delete this note and its screenshots?` |
 | Pin card — DELETE confirm button | `Confirm delete` |
