@@ -28,6 +28,11 @@ export default defineContentScript({
     const ui = await createShadowRootUi(ctx, {
       name: 'sfx-review-ui',
       position: 'inline',         // 'overlay' is undocumented — use 'inline'
+      // FIX 3: anchor to documentElement + append:'last' ensures the shadow host
+      // is the LAST child of <html>.  With equal max z-index (2147483647 set in
+      // :host) DOM paint order gives us the top slot over page popovers.
+      anchor: document.documentElement,
+      append: 'last',
       // z-index 2147483647 is set in :host via styles.css (cssInjectionMode:'ui')
       // WXT does not expose zIndex as an option for createShadowRootUi
 
