@@ -47,7 +47,7 @@ passed: 4
 issues: 0
 pending: 2
 open-gaps: 0 (all 3 discovered defects resolved + verified by user)
-note: tests 2,3,4,6 PASS after fix-pass (8f85d3c FAB click/drag, 10eaf4a re-map, ae4e4c4 top-layer stacking — all user-confirmed). Tests 1 (capture round-trip) and 5 (host-down error toast) remain UN-RUN by choice. Session status: partial (2 pending).
+note: tests 2,3,4,6 PASS after fix-pass (8f85d3c FAB click/drag, 10eaf4a re-map, ae4e4c4 top-layer stacking — all user-confirmed). User ACCEPTED phase 2026-06-02 ("everything looks good"). Tests 1 (capture round-trip) and 5 (host-down error toast) deferred by choice — remain tracked. NOTE: Test 1 (capture trio) gates Phases 5/6 which inherit captureTab/cropToRect/waitTwoRafs — eyeball it when starting Phase 5. Session status: partial (2 deferred).
 skipped: 0
 blocked: 0
 
