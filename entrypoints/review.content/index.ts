@@ -13,9 +13,11 @@ import './styles.css'; // MUST be top-level for cssInjectionMode:'ui' to pick it
 
 import { mountChip, teardownChip, getTabId } from './chip.js';
 import { mountFab } from './fab.js';
-import { openCard, closeCard } from './card.js';
+import { openCard, closeCard, openElementCard } from './card.js';
 import { showToast } from './toast.js';
 import { SFX_MSG } from '../../lib/types.js';
+import { captureElementContext } from '../../lib/element-context.js';
+import { exitPickMode } from './picker.js';
 
 export default defineContentScript({
   matches: ['<all_urls>'],
@@ -37,18 +39,31 @@ export default defineContentScript({
       // WXT does not expose zIndex as an option for createShadowRootUi
 
       onMount(container: HTMLElement) {
-        // Pass the ui.remove function so the chip's Exit button can unmount
-        mountChip(container, () => ui.remove());
-
-        // Shared toast adapter — all surfaces (card) use this single function
-        // to surface feedback inside the ONE shared shadow-root container (D-01/D-08)
+        // Shared toast adapter — defined ABOVE mountChip so it is in scope for
+        // the picker handler (onPickerClick) passed as mountChip's 3rd arg (D-01/D-08)
         const toast = (msg: string, isError: boolean) =>
           showToast(container, msg, isError);
+
+        // onMount-scoped mutable: holds the resolved tabId so the picker handler
+        // (which is synchronously passed to mountChip) can close over it once resolved.
+        let resolvedTabId: number | null = null;
+
+        // Mount chip synchronously — BEFORE the async getTabId().then block.
+        // chip.ts will call onPickerClick(el) when the user clicks a page element
+        // in pick mode. The handler is a safe no-op when resolvedTabId is still null
+        // (matches the existing FAB skip behavior when tabId rejects).
+        mountChip(container, () => ui.remove(), (el: Element) => {
+          if (resolvedTabId === null) return;
+          openElementCard(container, resolvedTabId, captureElementContext(el), () => {}, toast);
+        });
 
         // Resolve tabId once from chip's canonical getTabId (not duplicated here)
         // and mount the FAB. openCard/closeCard share the same container.
         getTabId()
           .then(tabId => {
+            // Store resolved tabId so the picker handler (above) can use it
+            resolvedTabId = tabId;
+
             // WR-01: wire aria-expanded on the FAB element returned by mountFab.
             // 'false' at construction (set in fab.ts); flip to 'true' when the
             // card opens, back to 'false' when it dismisses.
@@ -75,6 +90,8 @@ export default defineContentScript({
           teardownChip(elements.container);
           // Also close any open card so card-state stays consistent
           closeCard();
+          // Exit pick mode so it never outlives the UI (picker.ts idempotent)
+          exitPickMode();
         }
       },
     });
