@@ -32,7 +32,12 @@ Thumbs.db
 # Editor / local agent config (never publish internal agent identity files)
 .vscode/
 .idea/
-.claude/
+# Ignore .claude/ EXCEPT the shipped review-notes skill wrapper — it is part of the product (SKILL-01/D-01).
+# Walk-down form (a parent dir ignored with a trailing slash cannot be re-included).
+.claude/*
+!.claude/skills/
+.claude/skills/*
+!.claude/skills/review-notes/
 
 # Private business/strategy docs — never publish to the public MIT repo
 private/
