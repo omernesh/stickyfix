@@ -555,6 +555,180 @@ describe('Phase 6: DELETE /annotation/<serial> route (HOST-16)', () => {
 });
 
 // ---------------------------------------------------------------------------
+// D-02 / REL-02 / SC-2: 10 concurrent POST /annotation serial-integrity
+// Proves withSerialLock serialises getNextSerial+writeNote so no two concurrent
+// POSTs produce the same serial and no serial is skipped.
+// ---------------------------------------------------------------------------
+
+describe('concurrent POST /annotation serial integrity (REL-02/SC-2)', () => {
+  let fixture: TestFixture;
+
+  before(async () => {
+    fixture = buildFixture();
+    await listenFixture(fixture);
+  });
+
+  after(async () => { await closeFixture(fixture); });
+
+  it('10 concurrent POST /annotation yield serials 0001-0010 with no gaps/dupes (REL-02/SC-2)', async () => {
+    const post = (i: number) =>
+      fetch(`${fixture.baseUrl}/annotation`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'X-Stickyfix-Token': TEST_TOKEN,
+        },
+        body: JSON.stringify({
+          mode: 'free',
+          comment: `concurrent note ${i}`,
+          page: { url: 'http://localhost:5173/c', title: 'Concurrent Test' },
+          viewport: { width: 1280, height: 800, devicePixelRatio: 1 },
+        }),
+      }).then(r => r.json() as Promise<{ ok: boolean; file: string; serial: string }>);
+
+    // Construct all 10 fetch promises before awaiting any — real concurrency
+    const results = await Promise.all(Array.from({ length: 10 }, (_, i) => post(i)));
+
+    // All 10 must succeed
+    for (const r of results) {
+      assert.equal(r.ok, true, `Expected ok:true but got ${JSON.stringify(r)}`);
+    }
+
+    // Sorted serials must be exactly 0001..0010 — no gaps, no duplicates
+    const serials = results.map(r => r.serial).sort();
+    assert.deepEqual(
+      serials,
+      ['0001', '0002', '0003', '0004', '0005', '0006', '0007', '0008', '0009', '0010'],
+      `Serial integrity failed — got: ${serials.join(', ')}`
+    );
+
+    // Exactly 10 distinct .md files on disk — no gaps, no phantom writes
+    const { readdirSync } = await import('node:fs');
+    const mdFiles = readdirSync(fixture.cfg.notesDir).filter(f => /^\d{4}-.*\.md$/.test(f));
+    assert.equal(mdFiles.length, 10, `Expected 10 .md files, found ${mdFiles.length}: ${mdFiles.join(', ')}`);
+  });
+});
+
+// ---------------------------------------------------------------------------
+// D-04 / REL-03 / SC-3: POST /annotation payload-size backstop
+// Proves host enforces 12 MB cap: 11.9 MB succeeds, 12 MB+1 is rejected.
+// ECONNRESET-tolerant: req.destroy() may race the 413 write (Pitfall 2).
+// ---------------------------------------------------------------------------
+
+describe('POST /annotation payload-size backstop (REL-03/SC-3)', () => {
+  let fixture: TestFixture;
+
+  before(async () => {
+    fixture = buildFixture();
+    await listenFixture(fixture);
+  });
+
+  after(async () => { await closeFixture(fixture); });
+
+  it('POST /annotation with ~11.9 MB body succeeds (200 ok:true)', async () => {
+    // Build a valid free-mode payload whose JSON encodes to just under 12 MB.
+    // The outer shell (without the comment value) is ~140 bytes; pad the comment
+    // with ASCII 'A' so the total JSON is ~11.9 MB.
+    const TARGET_BYTES = Math.floor(11.9 * 1024 * 1024);
+    const outerShell = JSON.stringify({
+      mode: 'free',
+      comment: '',
+      page: { url: 'http://localhost:5173/test', title: 'Test Page' },
+      viewport: { width: 1280, height: 800, devicePixelRatio: 1 },
+    });
+    // Pad = target - (shell length - 2 empty-comment chars that stay) = target - (shell.length)
+    // shell already includes the two empty-comment quotes; we replace '' with the padded string
+    const padding = TARGET_BYTES - outerShell.length;
+    const comment = 'A'.repeat(Math.max(0, padding));
+    const payload = JSON.stringify({
+      mode: 'free',
+      comment,
+      page: { url: 'http://localhost:5173/test', title: 'Test Page' },
+      viewport: { width: 1280, height: 800, devicePixelRatio: 1 },
+    });
+
+    // Confirm the body is below the 12 MB cap
+    assert.ok(
+      new TextEncoder().encode(payload).length < 12 * 1024 * 1024,
+      `11.9 MB test body unexpectedly >= 12 MB (${new TextEncoder().encode(payload).length} bytes)`
+    );
+
+    const res = await fetch(`${fixture.baseUrl}/annotation`, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        'X-Stickyfix-Token': TEST_TOKEN,
+      },
+      body: payload,
+    });
+
+    assert.equal(res.status, 200, `Expected 200 for 11.9 MB body, got ${res.status}`);
+    const body = await res.json() as { ok: boolean; file: string; serial: string };
+    assert.equal(body.ok, true, `Expected ok:true for 11.9 MB body, got ${JSON.stringify(body)}`);
+  });
+
+  it('POST /annotation with >12 MB body is rejected (413 or ECONNRESET) (REL-03/SC-3)', async () => {
+    // Build a >12 MB JSON body via chunked string construction (no single giant allocation).
+    // Use a comment padded to make total JSON just over 12 MB + 1 byte.
+    const MAX_BODY = 12 * 1024 * 1024;
+    const outerShell = JSON.stringify({
+      mode: 'free',
+      comment: '',
+      page: { url: 'http://localhost:5173/test', title: 'Test Page' },
+      viewport: { width: 1280, height: 800, devicePixelRatio: 1 },
+    });
+    // Need comment length such that total JSON > MAX_BODY
+    const neededComment = MAX_BODY - outerShell.length + 2; // +2: exceed by at least 2 bytes
+    // Build comment from 64 KB chunks to avoid one giant allocation
+    const CHUNK = 'A'.repeat(64 * 1024);
+    const commentChunks: string[] = [];
+    let built = 0;
+    while (built < neededComment) {
+      const toAdd = Math.min(CHUNK.length, neededComment - built);
+      commentChunks.push(CHUNK.slice(0, toAdd));
+      built += toAdd;
+    }
+    const bigComment = commentChunks.join('');
+    const bigBody = JSON.stringify({
+      mode: 'free',
+      comment: bigComment,
+      page: { url: 'http://localhost:5173/test', title: 'Test Page' },
+      viewport: { width: 1280, height: 800, devicePixelRatio: 1 },
+    });
+
+    // Confirm the body exceeds the 12 MB cap
+    assert.ok(
+      new TextEncoder().encode(bigBody).length > MAX_BODY,
+      `oversize test body unexpectedly <= 12 MB`
+    );
+
+    // ECONNRESET-tolerant: req.destroy() may reset the TCP connection before
+    // the 413 response is readable by the client — mirror the existing PUT
+    // oversize tolerance at server.test.ts:477-502.
+    let status: number | null = null;
+    try {
+      const res = await fetch(`${fixture.baseUrl}/annotation`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'X-Stickyfix-Token': TEST_TOKEN,
+        },
+        body: bigBody,
+      });
+      status = res.status;
+    } catch {
+      // Connection reset (ECONNRESET) — req.destroy() closed the socket before
+      // the 413 could be flushed. This is acceptable: request was rejected.
+      // status remains null.
+    }
+    // If we got a response, it must be 413; a connection reset is equally valid.
+    if (status !== null) {
+      assert.equal(status, 413, `Expected 413 for oversized POST body, got ${status}`);
+    }
+  });
+});
+
+// ---------------------------------------------------------------------------
 // FIX-1: GET /screenshot route — token-gated PNG file serve
 // ---------------------------------------------------------------------------
 
