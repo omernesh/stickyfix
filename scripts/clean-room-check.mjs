@@ -51,6 +51,7 @@ const SKIP_FILENAMES = new Set([
   'README.md',
   'CLAUDE.md',
   'LICENSE',
+  'CLEAN-ROOM.md',
 ]);
 
 /**
