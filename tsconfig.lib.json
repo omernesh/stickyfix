@@ -17,6 +17,8 @@
     "lib/capture.ts",
     "lib/element-context.ts",
     "lib/highlight-draw.ts",
+    "lib/marquee.ts",
+    "lib/pin-position.ts",
     "lib/test/**/*.ts",
     "entrypoints/review.content/card-state.ts"
   ],
