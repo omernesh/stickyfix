@@ -656,3 +656,154 @@
   pointer-events: auto;
   font-family: system-ui, -apple-system, sans-serif;
 }
+
+/* ============================================================
+ * Phase 6: Persistent pins — PIN-01..06
+ * ============================================================ */
+
+/* Base pin marker — folded-corner sticky-note shape */
+.sfx-pin {
+  position: fixed;
+  width: 24px;
+  height: 24px;
+  border-radius: 4px 4px 4px 0;
+  border: 2px solid #9ca3af;
+  background: #e5e7eb;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  pointer-events: auto;
+  user-select: none;
+  z-index: 2;
+  box-shadow: 0 2px 6px rgba(0, 0, 0, 0.20);
+  font-size: 14px;
+  font-family: system-ui, -apple-system, sans-serif;
+}
+
+/* Free-note pin — amber (matches free-note card header) */
+.sfx-pin.sfx-pin-free {
+  background: #fde68a;
+  border-color: #f59e0b;
+}
+
+/* Element-note pin — blue (matches element-note card header) */
+.sfx-pin.sfx-pin-element {
+  background: #dbeafe;
+  border-color: #93c5fd;
+}
+
+/* Orphaned pin — greyed/dashed (D-07: never hidden, still clickable) */
+.sfx-pin.sfx-pin-orphaned {
+  background: #e5e7eb;
+  border-color: #9ca3af;
+  border-style: dashed;
+  opacity: 0.75;
+  cursor: pointer;
+}
+
+/* Unread/read dot (D-09) — absolute-positioned top-right, overlaps border */
+.sfx-pin-dot {
+  position: absolute;
+  top: -4px;
+  right: -4px;
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  background: #dc2626;
+  border: 1.5px solid #ffffff;
+  flex-shrink: 0;
+  pointer-events: none;
+}
+
+/* Read state: green dot */
+.sfx-pin.sfx-pin-read .sfx-pin-dot {
+  background: #16a34a;
+}
+
+/* Hover preview tooltip */
+.sfx-pin-preview {
+  position: absolute;
+  bottom: calc(100% + 4px);
+  left: 50%;
+  transform: translateX(-50%);
+  max-width: 240px;
+  background: rgba(17, 17, 17, 0.90);
+  color: #ffffff;
+  font-family: system-ui, -apple-system, sans-serif;
+  font-size: 13px;
+  font-weight: 400;
+  line-height: 1.4;
+  padding: 8px 12px;
+  border-radius: 4px;
+  white-space: pre-wrap;
+  word-break: break-word;
+  pointer-events: none;
+  display: none;
+  max-height: 120px;
+  overflow: hidden;
+  z-index: 3;
+}
+
+/* ============================================================
+ * Phase 6: Pin body text (view card) + delete button styles
+ * ============================================================ */
+
+/* Note body text in pin view card */
+.sfx-pin-body-text {
+  font-size: 14px;
+  line-height: 1.5;
+  color: #111111;
+  max-height: 200px;
+  overflow-y: auto;
+  white-space: pre-wrap;
+  word-break: break-word;
+}
+
+/* Delete note button in pin view card footer */
+.sfx-btn-delete {
+  padding: 4px 10px;
+  border: 1px solid #dc2626;
+  color: #dc2626;
+  background: #ffffff;
+  border-radius: 4px;
+  cursor: pointer;
+  font-size: 12px;
+  font-family: system-ui, -apple-system, sans-serif;
+  pointer-events: auto;
+}
+
+.sfx-btn-delete:hover {
+  background: #fee2e2;
+}
+
+/* Confirm delete button (destructive CTA — red filled) */
+.sfx-btn-delete-confirm {
+  padding: 4px 10px;
+  border: none;
+  background: #dc2626;
+  color: #ffffff;
+  border-radius: 4px;
+  cursor: pointer;
+  font-size: 12px;
+  font-weight: 600;
+  font-family: system-ui, -apple-system, sans-serif;
+  pointer-events: auto;
+}
+
+.sfx-btn-delete-confirm:hover {
+  background: #b91c1c;
+}
+
+.sfx-btn-delete-confirm:disabled {
+  opacity: 0.6;
+  cursor: not-allowed;
+}
+
+/* Delete confirm prompt text */
+.sfx-del-confirm-text {
+  font-size: 12px;
+  color: #444444;
+  font-family: system-ui, -apple-system, sans-serif;
+  flex: 1;
+}
