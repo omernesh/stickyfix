@@ -9,7 +9,7 @@
     "build": "wxt build && tsc -p tsconfig.host.json",
     "host": "node dist/host/src/index.js",
     "test:lib": "tsc -p tsconfig.lib.json && node --test dist/lib/lib/test/routing.test.js dist/lib/lib/test/discovery.test.js dist/lib/lib/test/capture.test.js dist/lib/lib/test/card-state.test.js dist/lib/lib/test/element-context.test.js dist/lib/lib/test/highlight-draw.test.js dist/lib/lib/test/marquee.test.js dist/lib/lib/test/pin-position.test.js",
-    "test": "tsc -p tsconfig.host.json && node --test dist/host/test/serial.test.js dist/host/test/security.test.js dist/host/test/write-note.test.js dist/host/test/server.test.js dist/host/test/config.test.js dist/host/test/index.test.js",
+    "test": "tsc -p tsconfig.host.json && node --test dist/host/test/serial.test.js dist/host/test/security.test.js dist/host/test/write-note.test.js dist/host/test/server.test.js dist/host/test/config.test.js dist/host/test/index.test.js dist/host/test/read-note.test.js",
     "check": "tsc --noEmit && tsc --noEmit -p tsconfig.host.json && node scripts/clean-room-check.mjs && node scripts/host-smoke-test.mjs && npm run test:lib && npm test",
     "postinstall": "wxt prepare"
   },
