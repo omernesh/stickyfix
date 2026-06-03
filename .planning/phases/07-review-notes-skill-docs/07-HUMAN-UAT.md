@@ -19,7 +19,7 @@ screenshot (text-only), ambiguous instruction (flagged), and idempotent re-run.
 | `0002-20260101-120001.md` | free | `[]` | Free-floating note, clear instruction, no screenshots |
 | `0003-20260101-120002.md` | element | `+1.png` ref but **no PNG file** | Missing screenshot — text-only path |
 | `0004-20260101-120003.md` | free | `[]` | Ambiguous instruction ("Make this better") |
-| `0099-20260101-120099.read.md` | free | `[]` | Pre-read note (must not be processed) |
+| `0099-20260101-120039.read.md` | free | `[]` | Pre-read note (must not be processed) |
 
 ---
 
@@ -59,7 +59,7 @@ Watch the agent's output for:
 
 - A `WARN: 0003-20260101-120002+1.png not found — proceeding text-only` line
   (for note 0003)
-- No attempt to process `0099-20260101-120099.read.md` (it must be skipped silently)
+- No attempt to process `0099-20260101-120039.read.md` (it must be skipped silently)
 
 ### 3. Verify outcomes
 
@@ -111,8 +111,8 @@ The frontmatter should show `status: flagged` and the body should end with a
 **0099 — Pre-read note, unchanged (SKILL-04, SKILL-05)**
 
 ```
-ls /tmp/sfx-uat-notes/0099-20260101-120099.read.md   # must still exist unchanged
-grep "status: read" /tmp/sfx-uat-notes/0099-20260101-120099.read.md
+ls /tmp/sfx-uat-notes/0099-20260101-120039.read.md   # must still exist unchanged
+grep "status: read" /tmp/sfx-uat-notes/0099-20260101-120039.read.md
 ```
 
 The file must be unmodified — the agent must not have touched it.
