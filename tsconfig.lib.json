@@ -20,6 +20,8 @@
     "lib/marquee.ts",
     "lib/pin-position.ts",
     "lib/review-notes.ts",
+    "lib/error-toast.ts",
+    "lib/payload-size.ts",
     "lib/test/**/*.ts",
     "entrypoints/review.content/card-state.ts"
   ],
