@@ -29,6 +29,7 @@ import type { ElementContext } from '../../lib/types.js';
 import { enterMarqueeMode } from './marquee.js';
 import { mapSendOutcome } from '../../lib/error-toast.js';
 import type { SendOutcome } from '../../lib/error-toast.js';
+import { exceedsBodyCap } from '../../lib/payload-size.js';
 
 // ---------------------------------------------------------------------------
 // Types
@@ -405,6 +406,17 @@ function _doSend(
     },
     screenshots: thumbnails.map(t => ({ kind: t.kind, mime: 'image/png' as const, dataUrl: t.dataUrl })),
   };
+
+  // D-04: pre-flight encoded-size guard — block oversize payloads before SW round-trip
+  if (exceedsBodyCap(JSON.stringify(payload))) {
+    showToastFn('Screenshot too large to send (over 12 MB) — remove a capture and retry', true);
+    sendBtn.textContent = 'Send';
+    cancelBtn.disabled = false;
+    textarea.readOnly = false;
+    const hasText = textarea.value.trim().length > 0;
+    sendBtn.disabled = !hasText;
+    return;
+  }
 
   // SW relay — mirrors chip.ts wireSendButton exactly (INVARIANT B: no direct fetch)
   chrome.runtime.sendMessage(
@@ -844,6 +856,14 @@ function _doElementSend(
         ...thumbnails.map(t => ({ kind: t.kind, mime: 'image/png' as const, dataUrl: t.dataUrl })),
       ],
     };
+
+    // D-04: pre-flight encoded-size guard — block oversize payloads before SW round-trip
+    if (exceedsBodyCap(JSON.stringify(payload))) {
+      showToastFn('Screenshot too large to send (over 12 MB) — remove a capture and retry', true);
+      restoreControls();
+      sendBtn.disabled = textarea.value.trim().length === 0;
+      return;
+    }
 
     // Step 8: SW relay (INVARIANT B — no direct fetch)
     chrome.runtime.sendMessage(
