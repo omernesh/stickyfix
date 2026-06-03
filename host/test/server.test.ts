@@ -1,13 +1,14 @@
 /**
  * Integration tests for stickyfix-host server.ts.
  * Covers HOST-01..05, HOST-10 (status, token gate, write-to-disk, CORS preflight, 127.0.0.1 binding).
+ * Phase 6 extension: HOST-14/15/16 (GET /annotations, PUT /annotation/<serial>, DELETE /annotation/<serial>).
  * Pattern 12: uses node:test lifecycle hooks, node:assert/strict.
  * Research Validation Architecture: HOST-04, HOST-05, HOST-10 coverage via real bound server.
  */
 
 import { describe, before, after, it } from 'node:test';
 import assert from 'node:assert/strict';
-import { mkdtempSync, rmSync, existsSync } from 'node:fs';
+import { mkdtempSync, rmSync, existsSync, writeFileSync } from 'node:fs';
 import { tmpdir } from 'node:os';
 import { join } from 'node:path';
 import type { AddressInfo } from 'node:net';
@@ -310,5 +311,231 @@ describe('stickyfix-host server integration', () => {
       beforeFiles.sort(),
       'No files should be created in notesDir on a bad-screenshot request (CR-02)'
     );
+  });
+});
+
+// ---------------------------------------------------------------------------
+// Phase 6: GET /annotations, PUT /annotation/<serial>, DELETE /annotation/<serial>
+// HOST-14, HOST-15, HOST-16
+// ---------------------------------------------------------------------------
+
+/** Build a minimal frontmatter .md fixture */
+function writeMdFixture(
+  notesDir: string,
+  filename: string,
+  fm: Record<string, string | number | string[]>,
+  body: string
+): void {
+  const fmLines = ['---'];
+  for (const [k, v] of Object.entries(fm)) {
+    if (Array.isArray(v)) {
+      fmLines.push(`${k}: []`);
+    } else if (typeof v === 'number') {
+      fmLines.push(`${k}: ${v}`);
+    } else {
+      fmLines.push(`${k}: ${JSON.stringify(v)}`);
+    }
+  }
+  fmLines.push('---');
+  const content = fmLines.join('\n') + '\n' + body + '\n';
+  writeFileSync(join(notesDir, filename), content, 'utf8');
+}
+
+describe('Phase 6: GET /annotations route (HOST-14)', () => {
+  let fixture: TestFixture;
+
+  before(async () => {
+    fixture = buildFixture();
+    await listenFixture(fixture);
+
+    // Seed two notes: one matching, one not
+    writeMdFixture(
+      fixture.cfg.notesDir,
+      '0001-20260603-100000.md',
+      {
+        id: 1, mode: 'free', url: 'http://localhost:5173/page',
+        status: 'unread', screenshots: [],
+      },
+      'Free note text'
+    );
+    writeMdFixture(
+      fixture.cfg.notesDir,
+      '0002-20260603-100000.md',
+      {
+        id: 2, mode: 'element', url: 'http://localhost:5173/other',
+        status: 'unread', screenshots: [],
+      },
+      'Other page note'
+    );
+  });
+
+  after(async () => { await closeFixture(fixture); });
+
+  it('GET /annotations without token returns 401 (T-06-04)', async () => {
+    const res = await fetch(`${fixture.baseUrl}/annotations?url=${encodeURIComponent('http://localhost:5173/page')}`);
+    assert.equal(res.status, 401);
+    const body = await res.json() as { ok: boolean };
+    assert.equal(body.ok, false);
+  });
+
+  it('GET /annotations with valid token returns 200 and JSON array (HOST-14)', async () => {
+    const pageUrl = 'http://localhost:5173/page';
+    const res = await fetch(`${fixture.baseUrl}/annotations?url=${encodeURIComponent(pageUrl)}`, {
+      headers: { 'X-Stickyfix-Token': TEST_TOKEN },
+    });
+    assert.equal(res.status, 200);
+    const body = await res.json() as { ok: boolean; pins: unknown[] };
+    assert.equal(body.ok, true);
+    assert.ok(Array.isArray(body.pins), 'pins should be an array');
+    assert.equal(body.pins.length, 1, 'should return only path-matching notes');
+  });
+
+  it('GET /annotations includes CORS headers on 200 response', async () => {
+    const pageUrl = 'http://localhost:5173/page';
+    const res = await fetch(`${fixture.baseUrl}/annotations?url=${encodeURIComponent(pageUrl)}`, {
+      headers: { 'X-Stickyfix-Token': TEST_TOKEN, 'Origin': 'http://localhost:5173' },
+    });
+    assert.equal(res.status, 200);
+    assert.ok(res.headers.get('access-control-allow-origin'), 'should have CORS header');
+  });
+
+  it('OPTIONS preflight includes PUT and DELETE in Access-Control-Allow-Methods (Pitfall 4)', async () => {
+    const res = await fetch(`${fixture.baseUrl}/annotations`, {
+      method: 'OPTIONS',
+      headers: { 'Origin': 'http://localhost:5173', 'Access-Control-Request-Method': 'GET' },
+    });
+    assert.equal(res.status, 204);
+    const methods = res.headers.get('access-control-allow-methods') ?? '';
+    assert.ok(methods.includes('PUT'), `Expected PUT in Allow-Methods, got: ${methods}`);
+    assert.ok(methods.includes('DELETE'), `Expected DELETE in Allow-Methods, got: ${methods}`);
+  });
+});
+
+describe('Phase 6: PUT /annotation/<serial> route (HOST-15)', () => {
+  let fixture: TestFixture;
+
+  before(async () => {
+    fixture = buildFixture();
+    await listenFixture(fixture);
+
+    // Seed a note to edit
+    writeMdFixture(
+      fixture.cfg.notesDir,
+      '0001-20260603-100000.md',
+      {
+        id: 1, mode: 'free', url: 'http://localhost:5173/page',
+        status: 'read', screenshots: [],
+      },
+      'Original comment'
+    );
+  });
+
+  after(async () => { await closeFixture(fixture); });
+
+  it('PUT /annotation/<serial> without token returns 401', async () => {
+    const res = await fetch(`${fixture.baseUrl}/annotation/0001`, {
+      method: 'PUT',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ comment: 'New text' }),
+    });
+    assert.equal(res.status, 401);
+  });
+
+  it('PUT /annotation/<serial> with unknown serial returns 404', async () => {
+    const res = await fetch(`${fixture.baseUrl}/annotation/9999`, {
+      method: 'PUT',
+      headers: {
+        'Content-Type': 'application/json',
+        'X-Stickyfix-Token': TEST_TOKEN,
+      },
+      body: JSON.stringify({ comment: 'new text' }),
+    });
+    assert.equal(res.status, 404);
+  });
+
+  it('PUT /annotation/<serial> with valid token + body returns 200 and updates file', async () => {
+    const newComment = 'Updated comment text for the note';
+    const res = await fetch(`${fixture.baseUrl}/annotation/0001`, {
+      method: 'PUT',
+      headers: {
+        'Content-Type': 'application/json',
+        'X-Stickyfix-Token': TEST_TOKEN,
+      },
+      body: JSON.stringify({ comment: newComment }),
+    });
+    assert.equal(res.status, 200);
+    const body = await res.json() as { ok: boolean };
+    assert.equal(body.ok, true);
+
+    // Verify file was updated
+    const { readFileSync } = await import('node:fs');
+    const content = readFileSync(join(fixture.cfg.notesDir, '0001-20260603-100000.md'), 'utf8');
+    assert.ok(content.includes(newComment), 'file body should contain the new comment');
+    assert.ok(content.includes('status: unread'), 'status should be re-marked unread');
+  });
+
+  it('PUT /annotation/<serial> with >12MB body returns 413 (HOST-11/T-06-03)', async () => {
+    const bigBody = JSON.stringify({ comment: 'x'.repeat(13 * 1024 * 1024) });
+    const res = await fetch(`${fixture.baseUrl}/annotation/0001`, {
+      method: 'PUT',
+      headers: {
+        'Content-Type': 'application/json',
+        'X-Stickyfix-Token': TEST_TOKEN,
+      },
+      body: bigBody,
+    });
+    assert.equal(res.status, 413);
+  });
+});
+
+describe('Phase 6: DELETE /annotation/<serial> route (HOST-16)', () => {
+  let fixture: TestFixture;
+
+  before(async () => {
+    fixture = buildFixture();
+    await listenFixture(fixture);
+
+    // Seed a note to delete
+    writeMdFixture(
+      fixture.cfg.notesDir,
+      '0001-20260603-100000.md',
+      {
+        id: 1, mode: 'free', url: 'http://localhost:5173/page',
+        status: 'unread', screenshots: [],
+      },
+      'Note to delete'
+    );
+  });
+
+  after(async () => { await closeFixture(fixture); });
+
+  it('DELETE /annotation/<serial> without token returns 401', async () => {
+    const res = await fetch(`${fixture.baseUrl}/annotation/0001`, {
+      method: 'DELETE',
+    });
+    assert.equal(res.status, 401);
+  });
+
+  it('DELETE /annotation/<serial> with unknown serial returns 404', async () => {
+    const res = await fetch(`${fixture.baseUrl}/annotation/9999`, {
+      method: 'DELETE',
+      headers: { 'X-Stickyfix-Token': TEST_TOKEN },
+    });
+    assert.equal(res.status, 404);
+  });
+
+  it('DELETE /annotation/<serial> with valid token returns 200 and removes .md', async () => {
+    const mdPath = join(fixture.cfg.notesDir, '0001-20260603-100000.md');
+    assert.ok(existsSync(mdPath), 'fixture .md should exist before delete');
+
+    const res = await fetch(`${fixture.baseUrl}/annotation/0001`, {
+      method: 'DELETE',
+      headers: { 'X-Stickyfix-Token': TEST_TOKEN },
+    });
+    assert.equal(res.status, 200);
+    const body = await res.json() as { ok: boolean };
+    assert.equal(body.ok, true);
+
+    assert.ok(!existsSync(mdPath), '.md should be removed after DELETE');
   });
 });
