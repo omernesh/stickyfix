@@ -69,12 +69,12 @@ Requirements for initial release. Each maps to roadmap phases.
 
 ### Region Capture (CAM)
 
-- [ ] **CAM-01**: A 📷 camera tool is available on every note (free and element)
-- [ ] **CAM-02**: Activating it dims the page with a scrim and switches the cursor to a crosshair
+- [x] **CAM-01**: A 📷 camera tool is available on every note (free and element)
+- [x] **CAM-02**: Activating it dims the page with a scrim and switches the cursor to a crosshair
 - [x] **CAM-03**: The user drags a rectangle (via interact.js); sub-threshold (<~6px) drag or `Esc` cancels without capturing
-- [ ] **CAM-04**: On release, stickyfix hides its own UI, captures the visible tab, crops to the dragged rect (DPR-corrected), and restores the UI
-- [ ] **CAM-05**: Each crop attaches as a deletable (`×`) thumbnail; multiple captures stack and increment `+2`, `+3`
-- [ ] **CAM-06**: Crops are sent as already-cropped PNG data-URLs; the host writes them as `<base>+<N>.png` and records paths in the `.md`
+- [x] **CAM-04**: On release, stickyfix hides its own UI, captures the visible tab, crops to the dragged rect (DPR-corrected), and restores the UI
+- [x] **CAM-05**: Each crop attaches as a deletable (`×`) thumbnail; multiple captures stack and increment `+2`, `+3`
+- [x] **CAM-06**: Crops are sent as already-cropped PNG data-URLs; the host writes them as `<base>+<N>.png` and records paths in the `.md`
 
 ### Visual Design (UI)
 
@@ -197,12 +197,12 @@ Which phases cover which requirements. Updated during roadmap creation.
 | ELEM-07 | Phase 5 | Complete |
 | ELEM-08 | Phase 5 | Complete |
 | ELEM-09 | Phase 5 | Complete |
-| CAM-01 | Phase 6 | Pending |
-| CAM-02 | Phase 6 | Pending |
+| CAM-01 | Phase 6 | Complete |
+| CAM-02 | Phase 6 | Complete |
 | CAM-03 | Phase 6 | Complete |
-| CAM-04 | Phase 6 | Pending |
-| CAM-05 | Phase 6 | Pending |
-| CAM-06 | Phase 6 | Pending |
+| CAM-04 | Phase 6 | Complete |
+| CAM-05 | Phase 6 | Complete |
+| CAM-06 | Phase 6 | Complete |
 | UI-01 | Phase 6 | Pending |
 | UI-02 | Phase 6 | Pending |
 | UI-03 | Phase 6 | Pending |

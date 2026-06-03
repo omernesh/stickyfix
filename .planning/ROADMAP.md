@@ -193,7 +193,7 @@ Plans:
 
 **Wave 1** *(blocked on Wave 0)*
 
-- [ ] 06-02-PLAN.md — Region Capture slice: 📷 camera button + scrim/marquee + DPR crop + deletable thumbnail strip + Send +N.png (CAM-01..06)
+- [x] 06-02-PLAN.md — Region Capture slice: 📷 camera button + scrim/marquee + DPR crop + deletable thumbnail strip + Send +N.png (CAM-01..06)
 
 **Wave 2** *(blocked on Wave 1)*
 
@@ -271,7 +271,7 @@ Phases execute in numeric order: 1 → 2 → 3 → 4 → 5 → 6 → 7 → 8 →
 | 3. Extension Skeleton + SW Relay Proof | 4/4 | Complete    | 2026-05-31 |
 | 4. Free-Note Mode + Capture Utilities | 3/3 | Complete    | 2026-06-01 |
 | 5. Element-Note Mode + Rich Context Capture | 3/3 | Complete   | 2026-06-02 |
-| 6. Region Capture + Visual Design + Persistent Pins | 1/4 | In Progress|  |
+| 6. Region Capture + Visual Design + Persistent Pins | 2/4 | In Progress|  |
 | 7. review-notes Skill + Docs | 0/TBD | Not started | - |
 | 8. Hardening + Pre-Release Audit | 0/TBD | Not started | - |
 | 9. Turnkey Onboarding & Cross-Browser Distribution | 0/TBD | Not started | - |
