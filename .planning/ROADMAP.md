@@ -251,7 +251,7 @@ Plans:
 
 - [x] 08-01-PLAN.md — Wave 0: pure error-toast mapper + payload-size pre-flight lib units + tests + wiring (REL-01, REL-03)
 - [x] 08-02-PLAN.md — Consolidate card.ts Send catch-sites behind the mapper + wire pre-flight guard (REL-01/D-01a, REL-03/D-04)
-- [ ] 08-03-PLAN.md — Host integration: 10-concurrent serial-integrity + POST payload-boundary backstop (REL-02, REL-03)
+- [x] 08-03-PLAN.md — Host integration: 10-concurrent serial-integrity + POST payload-boundary backstop (REL-02, REL-03)
 - [ ] 08-04-PLAN.md — Clean-room no-peek GPL audit extension + CLEAN-ROOM.md + 08-UAT.md manual runbook (SC-4, REL-01/02/03 manual)
 
 ### Phase 9: Turnkey Onboarding & Cross-Browser Distribution
@@ -292,5 +292,5 @@ Phases execute in numeric order: 1 → 2 → 3 → 4 → 5 → 6 → 7 → 8 →
 | 5. Element-Note Mode + Rich Context Capture | 3/3 | Complete   | 2026-06-02 |
 | 6. Region Capture + Visual Design + Persistent Pins | 4/4 | Complete   | 2026-06-03 |
 | 7. review-notes Skill + Docs | 3/3 | Complete    | 2026-06-03 |
-| 8. Hardening + Pre-Release Audit | 2/4 | In Progress|  |
+| 8. Hardening + Pre-Release Audit | 3/4 | In Progress|  |
 | 9. Turnkey Onboarding & Cross-Browser Distribution | 0/TBD | Not started | - |
