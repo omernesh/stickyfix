@@ -91,4 +91,4 @@ This document evolves at phase transitions and milestone boundaries.
 4. Update Context with current state
 
 ---
-*Last updated: 2026-05-31 after Phase 2 (Host MVP) — real `127.0.0.1` host: token-authed POST /annotation, serial mutex, safe `.md`+`.png` writes, CORS, 12MB cap; 48 tests green; code-review blockers fixed. Next: Phase 3 (Extension Skeleton + SW Relay Proof).*
+*Last updated: 2026-06-03 after Phase 7 (review-notes Skill + Docs) — portable `skill/SKILL.md` processes `notes/*.md` in serial order (auto-fix → rename `*.read.md` + `status: read`; ambiguous→flagged; missing-screenshot→text-only), backed by pure `lib/review-notes.ts` helpers (131/131 tests); quickstart-first README + CLEAN-ROOM.md (live GPL audit PASS). SKILL-01–05/DOC-01–02 done. One human UAT pending (live skill run, runbook in 07-HUMAN-UAT.md). Next: Phase 8 (Hardening + Pre-Release Audit).*
