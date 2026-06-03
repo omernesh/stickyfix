@@ -27,6 +27,8 @@ import { drawHighlightBox } from '../../lib/highlight-draw.js';
 import { buildContextSummary } from '../../lib/element-context.js';
 import type { ElementContext } from '../../lib/types.js';
 import { enterMarqueeMode } from './marquee.js';
+import { mapSendOutcome } from '../../lib/error-toast.js';
+import type { SendOutcome } from '../../lib/error-toast.js';
 
 // ---------------------------------------------------------------------------
 // Types
@@ -410,10 +412,9 @@ function _doSend(
     (resp: AnnotationResponse | undefined) => {
       // WR-02: guard both lastError AND resp — never silent (REL-01)
       if (chrome.runtime.lastError || !resp) {
-        showToastFn(
-          'Extension error: ' + (chrome.runtime.lastError?.message ?? 'no response'),
-          true
-        );
+        const outcome: SendOutcome = { kind: 'channel-dead', lastErrorMessage: chrome.runtime.lastError?.message };
+        const spec = mapSendOutcome(outcome);
+        showToastFn(spec.message, spec.isError);
         // Restore controls so user can retry
         sendBtn.disabled = false;
         sendBtn.textContent = 'Send';
@@ -424,13 +425,17 @@ function _doSend(
 
       if (resp.ok) {
         // resp.file is the exact host-returned filename — never client-reconstructed
-        showToastFn(`wrote notes\\${resp.file}`, false);
+        const outcome: SendOutcome = { kind: 'ok', file: resp.file };
+        const spec = mapSendOutcome(outcome);
+        showToastFn(spec.message, spec.isError);
         _doClose(onDismiss);
         // Phase 6: notify after-Send hook (pin re-fetch) — called AFTER dismiss
         onSent?.();
       } else {
         // Error: card stays open; restore controls (user can retry)
-        showToastFn(resp.error, true);
+        const outcome: SendOutcome = { kind: 'relay-error', error: resp.error };
+        const spec = mapSendOutcome(outcome);
+        showToastFn(spec.message, spec.isError);
         sendBtn.textContent = 'Send';
         cancelBtn.disabled = false;
         textarea.readOnly = false;
@@ -846,10 +851,9 @@ function _doElementSend(
       (resp: AnnotationResponse | undefined) => {
         // Step 9: guard both lastError AND resp — never silent (REL-01)
         if (chrome.runtime.lastError || !resp) {
-          showToastFn(
-            'Extension error: ' + (chrome.runtime.lastError?.message ?? 'no response'),
-            true
-          );
+          const outcome: SendOutcome = { kind: 'channel-dead', lastErrorMessage: chrome.runtime.lastError?.message };
+          const spec = mapSendOutcome(outcome);
+          showToastFn(spec.message, spec.isError);
           restoreControls();
           // Re-apply disabled rule (mirrors _doSend pattern)
           sendBtn.disabled = textarea.value.trim().length === 0;
@@ -857,14 +861,18 @@ function _doElementSend(
         }
 
         if (resp.ok) {
-          showToastFn(`wrote notes\\${resp.file}`, false);
+          const outcome: SendOutcome = { kind: 'ok', file: resp.file };
+          const spec = mapSendOutcome(outcome);
+          showToastFn(spec.message, spec.isError);
           _doClose(onDismiss);
           // Sticky-picker UX: re-arm pick mode after a successful element Send
           // so the user can immediately pick the next element (success only —
           // never on Discard/error).
           onSent?.();
         } else {
-          showToastFn(resp.error, true);
+          const outcome: SendOutcome = { kind: 'relay-error', error: resp.error };
+          const spec = mapSendOutcome(outcome);
+          showToastFn(spec.message, spec.isError);
           restoreControls();
           // Re-apply disabled rule (mirrors _doSend pattern)
           sendBtn.disabled = textarea.value.trim().length === 0;
