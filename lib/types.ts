@@ -85,6 +85,32 @@ export interface MsgCaptureTab {
   tabId: number;
 }
 
+// Phase 6 additions — same side-effect-free constraint (see invariant comment above).
+// These live in types.ts (not background.ts) so content scripts can import the string
+// constants without dragging in SW registrations (chrome.runtime.onStartup etc.).
+export const SFX_LIST_ANNOTATIONS  = 'SFX_LIST_ANNOTATIONS'  as const;
+export const SFX_EDIT_ANNOTATION   = 'SFX_EDIT_ANNOTATION'   as const;
+export const SFX_DELETE_ANNOTATION = 'SFX_DELETE_ANNOTATION' as const;
+
+export interface MsgListAnnotations {
+  type: typeof SFX_LIST_ANNOTATIONS;
+  tabId: number;
+  // pageUrl derived from chrome.tabs.get(tabId) in SW — NEVER from message body (anti-spoof)
+}
+
+export interface MsgEditAnnotation {
+  type: typeof SFX_EDIT_ANNOTATION;
+  tabId: number;
+  serial: string;
+  comment: string;
+}
+
+export interface MsgDeleteAnnotation {
+  type: typeof SFX_DELETE_ANNOTATION;
+  tabId: number;
+  serial: string;
+}
+
 // ---------------------------------------------------------------------------
 // Discriminated union for all SW-bound messages
 // ---------------------------------------------------------------------------
@@ -134,7 +160,10 @@ export type SfxMessage =
   | MsgSendAnnotation
   | MsgRefreshHosts
   | MsgAddHost
-  | MsgRemoveHost;
+  | MsgRemoveHost
+  | MsgListAnnotations
+  | MsgEditAnnotation
+  | MsgDeleteAnnotation;
 
 // ---------------------------------------------------------------------------
 // Response shapes
