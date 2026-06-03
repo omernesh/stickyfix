@@ -91,6 +91,7 @@ export interface MsgCaptureTab {
 export const SFX_LIST_ANNOTATIONS  = 'SFX_LIST_ANNOTATIONS'  as const;
 export const SFX_EDIT_ANNOTATION   = 'SFX_EDIT_ANNOTATION'   as const;
 export const SFX_DELETE_ANNOTATION = 'SFX_DELETE_ANNOTATION' as const;
+export const SFX_GET_SCREENSHOT    = 'SFX_GET_SCREENSHOT'    as const;
 
 export interface MsgListAnnotations {
   type: typeof SFX_LIST_ANNOTATIONS;
@@ -109,6 +110,13 @@ export interface MsgDeleteAnnotation {
   type: typeof SFX_DELETE_ANNOTATION;
   tabId: number;
   serial: string;
+}
+
+export interface MsgGetScreenshot {
+  type: typeof SFX_GET_SCREENSHOT;
+  tabId: number;
+  serial: string;
+  file: string;  // plain PNG basename — host validates confinement (T-06-02)
 }
 
 // ---------------------------------------------------------------------------
@@ -163,7 +171,8 @@ export type SfxMessage =
   | MsgRemoveHost
   | MsgListAnnotations
   | MsgEditAnnotation
-  | MsgDeleteAnnotation;
+  | MsgDeleteAnnotation
+  | MsgGetScreenshot;
 
 // ---------------------------------------------------------------------------
 // Response shapes

@@ -9,8 +9,10 @@
  */
 
 import * as http from 'node:http';
+import { readFile } from 'node:fs/promises';
+import { join, basename } from 'node:path';
 import { VERSION } from './config.js';
-import { checkToken, readBody } from './security.js';
+import { checkToken, readBody, isInsideDir } from './security.js';
 import { withSerialLock, getNextSerial } from './serial.js';
 import { writeNote } from './write-note.js';
 import { listAnnotations, editNote, deleteNote } from './read-note.js';
@@ -262,6 +264,75 @@ async function handleDeleteAnnotation(
   }
 }
 
+/**
+ * GET /screenshot?serial=<serial>&file=<basename.png>
+ * Serves a screenshot PNG file from notesDir as image/png bytes.
+ *
+ * Security model:
+ *  - Token-gated via checkToken (same as all other read verbs) — prevents
+ *    info-disclosure from unauthenticated callers (T-06-04 class).
+ *  - Path-traversal guard (T-06-02 class): `file` param must be a plain
+ *    basename (no `/`, `\`, or `..`), MUST start with `<serial>` (ties the
+ *    file to the note being requested), MUST end with `.png`.
+ *    The resolved absolute path is then verified via isInsideDir before read.
+ *  - No directory listing: only a single named file is ever returned.
+ *  - SW is the sole HTTP client — this endpoint is not called from page context.
+ */
+async function handleGetScreenshot(
+  req: http.IncomingMessage,
+  res: http.ServerResponse,
+  cfg: Config,
+): Promise<void> {
+  // CORS first (Pitfall 6)
+  setCorsHeaders(req, res);
+
+  // Token gate (T-06-04)
+  if (!checkToken(req, cfg.token)) {
+    res.writeHead(401, { 'Content-Type': 'application/json' });
+    res.end(JSON.stringify({ ok: false, error: 'unauthorized' }));
+    return;
+  }
+
+  const params = new URL(req.url ?? '/', 'http://x').searchParams;
+  const serial = params.get('serial') ?? '';
+  const file = params.get('file') ?? '';
+
+  // Basename guard: reject any path separator or traversal component (T-06-02)
+  if (
+    !serial ||
+    !file ||
+    file.includes('/') ||
+    file.includes('\\') ||
+    file.includes('..') ||
+    !file.startsWith(serial) ||  // ties file to the specific note serial
+    !file.endsWith('.png')
+  ) {
+    res.writeHead(400, { 'Content-Type': 'application/json' });
+    res.end(JSON.stringify({ ok: false, error: 'invalid file parameter' }));
+    return;
+  }
+
+  // Reconstruct absolute path and verify confinement (T-06-02)
+  const resolved = join(cfg.notesDir, basename(file));
+  if (!isInsideDir(cfg.notesDir, resolved)) {
+    res.writeHead(403, { 'Content-Type': 'application/json' });
+    res.end(JSON.stringify({ ok: false, error: 'forbidden' }));
+    return;
+  }
+
+  let bytes: Buffer;
+  try {
+    bytes = await readFile(resolved);
+  } catch {
+    res.writeHead(404, { 'Content-Type': 'application/json' });
+    res.end(JSON.stringify({ ok: false, error: 'not found' }));
+    return;
+  }
+
+  res.writeHead(200, { 'Content-Type': 'image/png', 'Content-Length': String(bytes.length) });
+  res.end(bytes);
+}
+
 // ---------------------------------------------------------------------------
 // Server factory (D-01: createHostServer — does NOT call listen)
 // ---------------------------------------------------------------------------
@@ -325,6 +396,18 @@ export function createHostServer(cfg: Config): http.Server {
     if (method === 'DELETE' && path.startsWith('/annotation/')) {
       const serial = path.slice('/annotation/'.length);
       handleDeleteAnnotation(req, res, cfg, serial).catch((e: unknown) => {
+        if (!res.headersSent) {
+          setCorsHeaders(req, res);
+          res.writeHead(500, { 'Content-Type': 'application/json' });
+          res.end(JSON.stringify({ ok: false, error: String(e) }));
+        }
+      });
+      return;
+    }
+
+    // GET /screenshot?serial=&file= — token-gated PNG file serve (FIX-1 UAT)
+    if (method === 'GET' && path === '/screenshot') {
+      handleGetScreenshot(req, res, cfg).catch((e: unknown) => {
         if (!res.headersSent) {
           setCorsHeaders(req, res);
           res.writeHead(500, { 'Content-Type': 'application/json' });

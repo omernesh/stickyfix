@@ -16,7 +16,7 @@
  *  - The relay is the only localhost path; content-script fetch is forbidden.
  */
 
-import { SFX_MSG, SFX_SET_ROUTE, SFX_GET_TAB_ID, SFX_CAPTURE_TAB, SFX_LIST_ANNOTATIONS, SFX_EDIT_ANNOTATION, SFX_DELETE_ANNOTATION } from '../lib/types.js';
+import { SFX_MSG, SFX_SET_ROUTE, SFX_GET_TAB_ID, SFX_CAPTURE_TAB, SFX_LIST_ANNOTATIONS, SFX_EDIT_ANNOTATION, SFX_DELETE_ANNOTATION, SFX_GET_SCREENSHOT } from '../lib/types.js';
 import type {
   SfxMessage,
   SfxResponse,
@@ -28,6 +28,7 @@ import type {
   MsgListAnnotations,
   MsgEditAnnotation,
   MsgDeleteAnnotation,
+  MsgGetScreenshot,
 } from '../lib/types.js';
 import {
   sfxRegistry,
@@ -529,6 +530,69 @@ async function handleDeleteAnnotation(
   return { ok: false, error: errBody.error ?? `HTTP ${resp.status}` };
 }
 
+/**
+ * GET /screenshot relay — fetch a PNG from the host and return it as a base64 data-URL.
+ *
+ * Security (T-06-02 / INVARIANT B):
+ *  - tabId bound to sender.tab.id (IDOR guard in onMessage switch, same as list/edit/delete).
+ *  - Host URL derived from chrome.tabs.get(tabId) — never from message body (anti-spoof).
+ *  - base64 conversion uses ArrayBuffer → Uint8Array → btoa (Web standard, no native deps).
+ *  - Content script NEVER fetches localhost directly — this SW is the sole HTTP client.
+ */
+async function handleGetScreenshot(
+  tabId: number,
+  serial: string,
+  file: string
+): Promise<{ ok: true; dataUrl: string } | { ok: false; error: string }> {
+  // 1. Re-read storage (Pitfall 1)
+  const state = await loadStorageState();
+
+  // 2. Derive URL from tab (anti-spoof — T-06-01)
+  const tab = await chrome.tabs.get(tabId);
+  if (!tab.url) {
+    return { ok: false, error: 'Cannot determine tab URL' };
+  }
+  const origin = new URL(tab.url).origin;
+
+  // 3. Resolve host
+  const host = resolveRoute(origin, state);
+  if (!host) {
+    return { ok: false, error: `No host mapped for origin: ${origin}` };
+  }
+  if (!host.token) {
+    return { ok: false, error: `No token set for host "${host.name}" — enter it in the popup` };
+  }
+
+  // 4. Relay GET to host /screenshot — SW has host_permissions (INVARIANT B)
+  let resp: Response;
+  try {
+    resp = await fetch(
+      `http://127.0.0.1:${host.port}/screenshot?serial=${encodeURIComponent(serial)}&file=${encodeURIComponent(file)}`,
+      { headers: { 'X-Stickyfix-Token': host.token } }
+    );
+  } catch (e: unknown) {
+    return { ok: false, error: `Host unreachable: ${String(e)}` };
+  }
+
+  if (!resp.ok) {
+    let errBody: { error?: string } = {};
+    try {
+      errBody = (await resp.json()) as { error?: string };
+    } catch { /* not JSON */ }
+    return { ok: false, error: errBody.error ?? `HTTP ${resp.status}` };
+  }
+
+  // 5. Convert ArrayBuffer → base64 data-URL (Web standard — no native deps, MIT)
+  const buf = await resp.arrayBuffer();
+  const bytes = new Uint8Array(buf);
+  let binary = '';
+  for (let i = 0; i < bytes.length; i++) {
+    binary += String.fromCharCode(bytes[i]);
+  }
+  const dataUrl = 'data:image/png;base64,' + btoa(binary);
+  return { ok: true, dataUrl };
+}
+
 // ---------------------------------------------------------------------------
 // handleAddHost — probe a specific port and add it to the registry
 // ---------------------------------------------------------------------------
@@ -654,7 +718,7 @@ interface MsgGetTabId {
  */
 chrome.runtime.onMessage.addListener(
   (
-    msg: SfxMessage | MsgSetRoute | MsgGetTabId | MsgCaptureTab | MsgAddHost | MsgRemoveHost,
+    msg: SfxMessage | MsgSetRoute | MsgGetTabId | MsgCaptureTab | MsgAddHost | MsgRemoveHost | MsgGetScreenshot,
     sender: chrome.runtime.MessageSender,
     sendResponse: (response: unknown) => void
   ): true | void => {
@@ -785,6 +849,22 @@ chrome.runtime.onMessage.addListener(
           return true;
         }
         handleDeleteAnnotation(delMsg.tabId, delMsg.serial)
+          .then(sendResponse)
+          .catch((err: unknown) =>
+            sendResponse({ ok: false, error: String(err) })
+          );
+        return true;
+      }
+
+      case SFX_GET_SCREENSHOT: {
+        // T-06-06 IDOR guard: only the tab that owns the note may fetch its screenshots
+        // tabId bound to sender.tab.id — never trusted from the message body (anti-spoof)
+        const shotMsg = msg as MsgGetScreenshot;
+        if (sender.tab?.id == null || sender.tab.id !== shotMsg.tabId) {
+          sendResponse({ ok: false, error: 'forbidden' });
+          return true;
+        }
+        handleGetScreenshot(shotMsg.tabId, shotMsg.serial, shotMsg.file)
           .then(sendResponse)
           .catch((err: unknown) =>
             sendResponse({ ok: false, error: String(err) })

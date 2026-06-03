@@ -19,7 +19,7 @@
  *  - sfx-* namespace (INVARIANT D)
  */
 
-import { SFX_LIST_ANNOTATIONS, SFX_EDIT_ANNOTATION, SFX_DELETE_ANNOTATION } from '../../lib/types.js';
+import { SFX_LIST_ANNOTATIONS, SFX_EDIT_ANNOTATION, SFX_DELETE_ANNOTATION, SFX_GET_SCREENSHOT } from '../../lib/types.js';
 import { computePinPosition } from '../../lib/pin-position.js';
 
 // ---------------------------------------------------------------------------
@@ -76,21 +76,37 @@ export async function mountPins(
 
   _container = container;
 
-  // Fetch pin descriptors from host via SW relay (INVARIANT B — no direct fetch)
-  const resp = await new Promise<{ ok: boolean; pins?: PinDescriptor[]; error?: string }>(
-    (resolve) => {
-      chrome.runtime.sendMessage(
-        { type: SFX_LIST_ANNOTATIONS, tabId } as { type: string; tabId: number },
-        (r: { ok: boolean; pins?: PinDescriptor[]; error?: string } | undefined) => {
-          if (chrome.runtime.lastError || !r) {
-            resolve({ ok: false, error: chrome.runtime.lastError?.message ?? 'no response' });
-          } else {
-            resolve(r);
-          }
-        }
-      );
+  // Fetch pin descriptors from host via SW relay (INVARIANT B — no direct fetch).
+  // FIX-3a: retry up to 3 times on transient SW errors (post-reload race where
+  // chrome.runtime.lastError fires or no response is returned before the SW wakes).
+  // A genuine ok:true result (even pins:[]) is never retried.
+  const RETRY_DELAYS = [250, 600, 1200]; // ms — short backoff for SW wake-up race
+  let resp: { ok: boolean; pins?: PinDescriptor[]; error?: string } = { ok: false, error: 'not started' };
+  for (let attempt = 0; attempt <= RETRY_DELAYS.length; attempt++) {
+    if (attempt > 0) {
+      // Back off before retry
+      await new Promise<void>(r => setTimeout(r, RETRY_DELAYS[attempt - 1]));
     }
-  );
+    const r = await new Promise<{ ok: boolean; pins?: PinDescriptor[]; error?: string }>(
+      (resolve) => {
+        chrome.runtime.sendMessage(
+          { type: SFX_LIST_ANNOTATIONS, tabId } as { type: string; tabId: number },
+          (raw: { ok: boolean; pins?: PinDescriptor[]; error?: string } | undefined) => {
+            if (chrome.runtime.lastError || !raw) {
+              resolve({ ok: false, error: chrome.runtime.lastError?.message ?? 'no response' });
+            } else {
+              resolve(raw);
+            }
+          }
+        );
+      }
+    );
+    if (r.ok) {
+      resp = r;
+      break; // genuine success — stop retrying
+    }
+    resp = r; // keep the latest error in case all attempts fail
+  }
 
   if (!resp.ok || !resp.pins) {
     showToastFn(`Could not load pins — ${resp.error ?? 'unknown error'}`, true);
@@ -166,6 +182,33 @@ export async function mountPins(
 
     container.appendChild(pinEl);
   }
+
+  // FIX-3b: Late-anchor retry for element pins on SPA pages.
+  // After initial render some SPA target elements may not be in the DOM yet.
+  // Schedule a few reposition passes so element pins snap onto their anchors
+  // once the SPA finishes rendering. Timer IDs are pushed into _cleanupFns so
+  // teardownPins() cancels them — no leaks (T-06-09).
+  const LATE_ANCHOR_DELAYS = [400, 900, 1600]; // ms — SPA render windows
+  for (const delay of LATE_ANCHOR_DELAYS) {
+    const tid = setTimeout(() => {
+      _repositionElementPins();
+    }, delay);
+    _cleanupFns.push(() => clearTimeout(tid));
+  }
+
+  // One final pass on window 'load' (covers hard-reload race where DOMContentLoaded
+  // fires before images/iframes finish and a framework initialises inside an async module).
+  const onWindowLoad = () => {
+    _repositionElementPins();
+    window.removeEventListener('load', onWindowLoad);
+  };
+  if (document.readyState === 'complete') {
+    // Already loaded — run immediately (synchronous, no async overhead)
+    _repositionElementPins();
+  } else {
+    window.addEventListener('load', onWindowLoad);
+    _cleanupFns.push(() => window.removeEventListener('load', onWindowLoad));
+  }
 }
 
 /**
@@ -240,17 +283,40 @@ export function openPinCard(
   body.appendChild(bodyText);
 
   // Thumbnails (read-only in view mode — no × button)
+  // FIX-1: screenshots are bare basenames from the host; they cannot be set as img.src
+  // directly (would resolve against page origin → 404). Fetch each as a base64 data-URL
+  // via the SW relay (INVARIANT B — content script never fetches localhost directly).
   if (data.screenshots && data.screenshots.length > 0) {
     const strip = document.createElement('div');
     strip.className = 'sfx-thumb-strip';
     strip.style.display = 'flex';
-    for (const src of data.screenshots) {
+    for (const screenshotFile of data.screenshots) {
       const wrap = document.createElement('div');
       wrap.className = 'sfx-thumb-wrap';
       const img = document.createElement('img');
       img.className = 'sfx-thumb-img';
-      img.src = src;  // data: URI or relative path from host — no XSS risk
       img.alt = 'Screenshot';
+      // Request data-URL from SW (sole HTTP client — INVARIANT B / no silent failure — REL-01)
+      chrome.runtime.sendMessage(
+        {
+          type: SFX_GET_SCREENSHOT,
+          tabId,
+          serial: data.serial,
+          file: screenshotFile,
+        } as { type: string; tabId: number; serial: string; file: string },
+        (resp: { ok: boolean; dataUrl?: string; error?: string } | undefined) => {
+          if (chrome.runtime.lastError || !resp || !resp.ok || !resp.dataUrl) {
+            // No silent failure: add sfx-thumb-broken class + error text node (REL-01)
+            img.classList.add('sfx-thumb-broken');
+            const errText = document.createElement('span');
+            errText.className = 'sfx-thumb-broken-label';
+            errText.textContent = 'image unavailable';  // textContent — INVARIANT C
+            wrap.appendChild(errText);
+          } else {
+            img.src = resp.dataUrl;  // data:image/png;base64,… — no XSS risk (bytes, not HTML)
+          }
+        }
+      );
       wrap.appendChild(img);
       strip.appendChild(wrap);
     }

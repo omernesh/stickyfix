@@ -8,7 +8,7 @@
 
 import { describe, before, after, it } from 'node:test';
 import assert from 'node:assert/strict';
-import { mkdtempSync, rmSync, existsSync, writeFileSync } from 'node:fs';
+import { mkdtempSync, rmSync, existsSync, writeFileSync, readFileSync } from 'node:fs';
 import { tmpdir } from 'node:os';
 import { join } from 'node:path';
 import type { AddressInfo } from 'node:net';
@@ -551,5 +551,89 @@ describe('Phase 6: DELETE /annotation/<serial> route (HOST-16)', () => {
     assert.equal(body.ok, true);
 
     assert.ok(!existsSync(mdPath), '.md should be removed after DELETE');
+  });
+});
+
+// ---------------------------------------------------------------------------
+// FIX-1: GET /screenshot route — token-gated PNG file serve
+// ---------------------------------------------------------------------------
+
+// Minimal 1×1 transparent PNG (67 bytes, valid magic + IHDR + IDAT + IEND)
+const TINY_PNG_B64 =
+  'iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAQAAAC1HAwCAAAAC0lEQVR42mNkYAAAAAYAAjCB0C8AAAAASUVORK5CYII=';
+const TINY_PNG_BUF = Buffer.from(TINY_PNG_B64, 'base64');
+
+describe('FIX-1: GET /screenshot route', () => {
+  let fixture: TestFixture;
+
+  before(async () => {
+    fixture = buildFixture();
+    await listenFixture(fixture);
+
+    // Write a tiny 1×1 PNG into notesDir named like a real screenshot
+    writeFileSync(join(fixture.cfg.notesDir, '0001-20260601-120000+1.png'), TINY_PNG_BUF);
+  });
+
+  after(async () => { await closeFixture(fixture); });
+
+  it('GET /screenshot without token returns 401 (T-06-04)', async () => {
+    const res = await fetch(
+      `${fixture.baseUrl}/screenshot?serial=0001&file=0001-20260601-120000%2B1.png`
+    );
+    assert.equal(res.status, 401);
+    const body = await res.json() as { ok: boolean };
+    assert.equal(body.ok, false);
+  });
+
+  it('GET /screenshot with valid token returns 200 image/png (FIX-1)', async () => {
+    const res = await fetch(
+      `${fixture.baseUrl}/screenshot?serial=0001&file=${encodeURIComponent('0001-20260601-120000+1.png')}`,
+      { headers: { 'X-Stickyfix-Token': TEST_TOKEN } }
+    );
+    assert.equal(res.status, 200);
+    assert.equal(res.headers.get('content-type'), 'image/png');
+    const buf = Buffer.from(await res.arrayBuffer());
+    assert.deepEqual(buf, TINY_PNG_BUF, 'response bytes must match the file on disk');
+  });
+
+  it('GET /screenshot rejects missing file with 404', async () => {
+    const res = await fetch(
+      `${fixture.baseUrl}/screenshot?serial=0001&file=${encodeURIComponent('0001-20260601-120000+9.png')}`,
+      { headers: { 'X-Stickyfix-Token': TEST_TOKEN } }
+    );
+    assert.equal(res.status, 404);
+  });
+
+  it('GET /screenshot rejects traversal in file param with 400 (T-06-02)', async () => {
+    const res = await fetch(
+      `${fixture.baseUrl}/screenshot?serial=0001&file=${encodeURIComponent('../secret.png')}`,
+      { headers: { 'X-Stickyfix-Token': TEST_TOKEN } }
+    );
+    assert.equal(res.status, 400);
+  });
+
+  it('GET /screenshot rejects file that does not start with serial (T-06-02)', async () => {
+    const res = await fetch(
+      `${fixture.baseUrl}/screenshot?serial=0001&file=${encodeURIComponent('9999-other+1.png')}`,
+      { headers: { 'X-Stickyfix-Token': TEST_TOKEN } }
+    );
+    assert.equal(res.status, 400);
+  });
+
+  it('GET /screenshot rejects non-PNG file extension (T-06-02)', async () => {
+    const res = await fetch(
+      `${fixture.baseUrl}/screenshot?serial=0001&file=${encodeURIComponent('0001-20260601-120000.jpg')}`,
+      { headers: { 'X-Stickyfix-Token': TEST_TOKEN } }
+    );
+    assert.equal(res.status, 400);
+  });
+
+  it('GET /screenshot includes CORS headers (Pitfall 6)', async () => {
+    const res = await fetch(
+      `${fixture.baseUrl}/screenshot?serial=0001&file=${encodeURIComponent('0001-20260601-120000+1.png')}`,
+      { headers: { 'X-Stickyfix-Token': TEST_TOKEN, 'Origin': 'http://localhost:5173' } }
+    );
+    assert.equal(res.status, 200);
+    assert.ok(res.headers.get('access-control-allow-origin'), 'should have CORS header');
   });
 });
