@@ -50,6 +50,12 @@ export interface AnnotationPayload {
   };
   element?: ElementContext;
   screenshots?: Screenshot[];
+  /**
+   * D-03: viewport coords of the note card at Send time (free notes only).
+   * Populated by card.ts getBoundingClientRect() and persisted to frontmatter
+   * as 'note_position' (canonical key). Undefined for element notes.
+   */
+  notePosition?: { x: number; y: number };
 }
 
 export interface Config {

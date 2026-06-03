@@ -91,6 +91,14 @@ export function buildFrontmatter(
   if (mode === 'element' && element) {
     if (element.selector) fm['selector'] = element.selector;
     if (element.reactComponent) fm['react_component'] = element.reactComponent;
+    // D-03: persist page-absolute rect for orphaned pin fallback (PIN-03)
+    if (element.rect) fm['rect'] = element.rect;
+  }
+
+  // D-03: persist free-note viewport coords for pin floating position (PIN-02)
+  // CANONICAL KEY: note_position — matches listAnnotations read key (D-03)
+  if (mode === 'free' && payload.notePosition) {
+    fm['note_position'] = payload.notePosition;
   }
 
   fm['screenshots'] = screenshotRelPaths;
