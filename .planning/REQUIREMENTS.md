@@ -94,9 +94,9 @@ Requirements for initial release. Each maps to roadmap phases.
 
 ### Reliability (REL)
 
-- [ ] **REL-01**: Every failed Send (host down, 4xx/5xx, token rejected, no host for origin) surfaces a visible toast — never a silent drop
+- [x] **REL-01**: Every failed Send (host down, 4xx/5xx, token rejected, no host for origin) surfaces a visible toast — never a silent drop
 - [ ] **REL-02**: Multi-note sessions remain stable; a second note increments the serial to `0002`
-- [ ] **REL-03**: Large-screenshot payloads are handled gracefully (size guard + clear error)
+- [x] **REL-03**: Large-screenshot payloads are handled gracefully (size guard + clear error)
 
 ### review-notes Skill (SKILL)
 
@@ -213,9 +213,9 @@ Which phases cover which requirements. Updated during roadmap creation.
 | PIN-04 | Phase 6 | Complete |
 | PIN-05 | Phase 6 | Complete |
 | PIN-06 | Phase 6 | Complete |
-| REL-01 | Phase 8 | Pending |
+| REL-01 | Phase 8 | Complete |
 | REL-02 | Phase 8 | Pending |
-| REL-03 | Phase 8 | Pending |
+| REL-03 | Phase 8 | Complete |
 | SKILL-01 | Phase 7 | Complete |
 | SKILL-02 | Phase 7 | Complete |
 | SKILL-03 | Phase 7 | Complete |

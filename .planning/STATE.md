@@ -3,14 +3,14 @@ gsd_state_version: 1.0
 milestone: v1.0
 milestone_name: milestone
 status: executing
-stopped_at: Phase 8 context gathered
-last_updated: "2026-06-03T20:54:40.633Z"
-last_activity: 2026-06-03 -- Phase 8 planning complete
+stopped_at: Completed 08-01 — pure lib units error-toast + payload-size
+last_updated: "2026-06-03T21:03:54.406Z"
+last_activity: 2026-06-03
 progress:
   total_phases: 9
   completed_phases: 7
   total_plans: 27
-  completed_plans: 23
+  completed_plans: 24
   percent: 78
 ---
 
@@ -21,15 +21,15 @@ progress:
 See: .planning/PROJECT.md (updated 2026-05-31)
 
 **Core value:** A note dropped on a page reliably becomes a precise, context-rich .md file on disk in the right project's notes/ folder — never silently lost.
-**Current focus:** Phase 07 — review-notes-skill-docs
+**Current focus:** Phase 8 — Hardening + Pre-Release Audit
 
 ## Current Position
 
-Phase: 8
-Plan: Not started
+Phase: 8 (Hardening + Pre-Release Audit) — EXECUTING
+Plan: 2 of 4
 Status: Ready to execute
 Next: Phase 7 (review-notes Skill + Docs) — start with /gsd-discuss-phase 7 or /gsd-plan-phase 7
-Last activity: 2026-06-03 -- Phase 8 planning complete
+Last activity: 2026-06-03
 
 Progress: [██░░░░░░░░] 22%
 
@@ -70,6 +70,7 @@ Progress: [██░░░░░░░░] 22%
 | Phase 05 P03 | 0 | 2 tasks | 3 files |
 | Phase 06-region-capture-visual-design P04 | 40m | 4 tasks | 5 files |
 | Phase 07 P01 | 12m | 2 tasks | 4 files |
+| Phase 08 P01 | 299 | 3 tasks | 6 files |
 
 ## Accumulated Context
 
@@ -103,6 +104,8 @@ Recent decisions affecting current work:
 - [Phase ?]: [05-03]: Task 3 Chrome UAT (ELEM-01/02/03/08/09) DEFERRED-MANUAL (🟡M) to consolidated Phase-5 session covering 05-02 + 05-03 — code-complete, NOT runtime-verified
 - [Phase ?]: 07-01
 - [Phase ?]: 07-01
+- [Phase ?]: mapSendOutcome uses discriminated union SendOutcome returning ToastSpec — single source of truth for D-01a card.ts toast strings
+- [Phase ?]: exceedsBodyCap uses strict > MAX_BODY_BYTES matching host security.ts:12 exactly — boundary inclusive-accept
 
 ### Pending Todos
 
@@ -130,6 +133,6 @@ None yet.
 
 ## Session Continuity
 
-Last session: 2026-06-03T20:28:32.713Z
-Stopped at: Phase 8 context gathered
-Resume file: .planning/phases/08-hardening-pre-release-audit/08-CONTEXT.md
+Last session: 2026-06-03T21:03:54.397Z
+Stopped at: Completed 08-01 — pure lib units error-toast + payload-size
+Resume file: None

@@ -16,6 +16,7 @@ Decimal phases appear between their surrounding integers in numeric order.
 - [x] **Phase 1: Scaffold & Clean-Room Foundation** - Cross-platform WXT + host build succeeds; sfx-* identifier namespace established; no GPL artifacts (completed 2026-05-31)
 - [x] **Phase 2: Host MVP** - stickyfix-host writes .md + .png files with serial mutex, token auth, path safety, and CORS
  (completed 2026-05-31)
+
 - [x] **Phase 3: Extension Skeleton + SW Relay Proof** - Popup, host discovery, chrome.storage.local state, on-demand injection, dummy POST relay proven end-to-end (completed 2026-05-31)
 - [x] **Phase 4: Free-Note Mode + Capture Utilities** - Draggable FAB → post-it → Send → .md on disk; DPR crop, double-rAF flush, captureVisibleTab relay established as reusable utilities (completed 2026-05-31)
 - [x] **Phase 5: Element-Note Mode + Rich Context Capture** - Element picker with @medv/finder selector, React fiber, computed styles, outerHTML, auto-highlight screenshot (completed 2026-06-02)
@@ -247,7 +248,8 @@ Plans:
 **Plans**: 4 plans
 
 Plans:
-- [ ] 08-01-PLAN.md — Wave 0: pure error-toast mapper + payload-size pre-flight lib units + tests + wiring (REL-01, REL-03)
+
+- [x] 08-01-PLAN.md — Wave 0: pure error-toast mapper + payload-size pre-flight lib units + tests + wiring (REL-01, REL-03)
 - [ ] 08-02-PLAN.md — Consolidate card.ts Send catch-sites behind the mapper + wire pre-flight guard (REL-01/D-01a, REL-03/D-04)
 - [ ] 08-03-PLAN.md — Host integration: 10-concurrent serial-integrity + POST payload-boundary backstop (REL-02, REL-03)
 - [ ] 08-04-PLAN.md — Clean-room no-peek GPL audit extension + CLEAN-ROOM.md + 08-UAT.md manual runbook (SC-4, REL-01/02/03 manual)
@@ -290,5 +292,5 @@ Phases execute in numeric order: 1 → 2 → 3 → 4 → 5 → 6 → 7 → 8 →
 | 5. Element-Note Mode + Rich Context Capture | 3/3 | Complete   | 2026-06-02 |
 | 6. Region Capture + Visual Design + Persistent Pins | 4/4 | Complete   | 2026-06-03 |
 | 7. review-notes Skill + Docs | 3/3 | Complete    | 2026-06-03 |
-| 8. Hardening + Pre-Release Audit | 0/TBD | Not started | - |
+| 8. Hardening + Pre-Release Audit | 1/4 | In Progress|  |
 | 9. Turnkey Onboarding & Cross-Browser Distribution | 0/TBD | Not started | - |
