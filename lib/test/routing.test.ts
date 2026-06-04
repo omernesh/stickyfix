@@ -37,7 +37,7 @@ function makeState(
     registry,
     tokens,
     originMap,
-    prefs: { reviewMode: {} },
+    prefs: { reviewMode: {}, showHints: true },
   };
 }
 

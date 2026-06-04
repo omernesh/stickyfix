@@ -34,6 +34,7 @@ const addSubmitBtn = document.getElementById('sfx-add-submit') as HTMLButtonElem
 const addErrorEl = document.getElementById('sfx-add-error') as HTMLElement;
 const reviewBtn = document.getElementById('sfx-review-btn') as HTMLButtonElement;
 const toggleErrorEl = document.getElementById('sfx-toggle-error') as HTMLElement;
+const hintsCheckbox = document.getElementById('sfx-hints-checkbox') as HTMLInputElement;
 const routingLineEl = document.getElementById('sfx-routing-line')!;
 
 // ---------------------------------------------------------------------------
@@ -410,6 +411,34 @@ async function loadReviewState(): Promise<void> {
 }
 
 // ---------------------------------------------------------------------------
+// Show-hints preference — checkbox load + persist
+// ---------------------------------------------------------------------------
+
+/** Load the showHints pref into the checkbox (default true when undefined). */
+async function loadHintsPref(): Promise<void> {
+  try {
+    const prefs = await sfxPrefs.getValue();
+    // Treat missing/legacy as default ON (prefs persisted before showHints existed)
+    hintsCheckbox.checked = prefs.showHints !== false;
+  } catch {
+    hintsCheckbox.checked = true;
+  }
+}
+
+// Persist on change — read-modify-write so reviewMode is preserved (never clobbered).
+hintsCheckbox.addEventListener('change', () => {
+  void (async () => {
+    try {
+      const prefs = await sfxPrefs.getValue();
+      prefs.showHints = hintsCheckbox.checked;
+      await sfxPrefs.setValue(prefs);
+    } catch {
+      // Non-fatal — the next open re-reads current state
+    }
+  })();
+});
+
+// ---------------------------------------------------------------------------
 // Review Mode toggle click handler
 //
 // CRITICAL ORDERING (Pattern 3 / Pitfall 3):
@@ -566,6 +595,7 @@ async function init(): Promise<void> {
 
   renderHosts(registry, tokens);
   await loadReviewState();
+  await loadHintsPref();
   await renderRoutingLine();
 }
 

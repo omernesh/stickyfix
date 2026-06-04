@@ -42,7 +42,7 @@ export interface StorageState {
   /** origin → host name */
   originMap: Record<string, string>;
   /** extension preferences */
-  prefs: { reviewMode: Record<string, boolean> };
+  prefs: { reviewMode: Record<string, boolean>; showHints: boolean };
 }
 
 // ---------------------------------------------------------------------------

@@ -60,6 +60,9 @@
   position: fixed;
   top: 16px;
   right: 16px;
+  /* Above the FAB (4) so the chip's exit/send controls always win pointer
+     events when the draggable FAB is parked over the chip (UAT overlap fix). */
+  z-index: 5;
   background: #ffffff;
   border: 1px solid #cccccc;
   border-radius: 6px;
@@ -164,6 +167,9 @@
   position: fixed;
   bottom: 32px;
   right: 32px;
+  /* Below the chip (5) but above page-anchored pins (2)/preview (3) so the FAB
+     floats over content yet never occludes the chip's controls when overlapped. */
+  z-index: 4;
   width: 44px;
   height: 44px;
   border-radius: 50%;
@@ -446,6 +452,13 @@
   border-radius: 2px;
 }
 
+/* Locked selection (after ↑/↓ traversal) — blue so it reads as "held; click or
+   Enter to confirm" vs the orange live-hover highlight. */
+.sfx-hover-highlight.sfx-pick-locked {
+  border-color: rgba(59, 130, 246, 0.95);
+  background: rgba(59, 130, 246, 0.12);
+}
+
 .sfx-hover-label {
   position: absolute;
   left: 0;
@@ -462,6 +475,78 @@
   max-width: 240px;
   overflow: hidden;
   text-overflow: ellipsis;
+}
+
+/* ============================================================
+ * Pick-mode hints panel (optional — opts.showHints)
+ * Top-left so it never collides with the chip (top/right) or FAB (bottom/right).
+ * pointer-events:none so it never blocks picking.
+ * ============================================================ */
+
+.sfx-pick-hints {
+  position: fixed;
+  top: 16px;
+  left: 16px;
+  /* Above the chip (5)/FAB (4) and the free-note card so it is never covered;
+     draggable (pointer-events:auto + cursor:move) so the user can pull it off
+     anything they want to pick. Semi-transparent so it never fully hides
+     content beneath it. */
+  z-index: 6;
+  pointer-events: auto;
+  cursor: move;
+  user-select: none;
+  max-width: 360px;
+  background: rgba(0, 0, 0, 0.6);
+  color: #ffffff;
+  border-radius: 6px;
+  padding: 12px 14px;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.3);
+  font-family: Arial, Helvetica, sans-serif;
+  font-size: 15px;
+  line-height: 1.45;
+}
+
+.sfx-pick-hints-title {
+  font-family: Arial, Helvetica, sans-serif;
+  font-weight: 700;
+  font-size: 15px;
+  margin-bottom: 8px;
+  /* leave room for the close (×) button at the top-right */
+  padding-right: 20px;
+}
+
+.sfx-pick-hints-close {
+  position: absolute;
+  top: 6px;
+  right: 8px;
+  width: 20px;
+  height: 20px;
+  padding: 0;
+  border: none;
+  background: transparent;
+  color: #ffffff;
+  font-family: Arial, Helvetica, sans-serif;
+  font-size: 18px;
+  line-height: 1;
+  cursor: pointer;
+  opacity: 0.75;
+}
+
+.sfx-pick-hints-close:hover {
+  opacity: 1;
+}
+
+.sfx-pick-hints-list {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+.sfx-pick-hints-list li {
+  font-weight: 400;
 }
 
 /* ============================================================

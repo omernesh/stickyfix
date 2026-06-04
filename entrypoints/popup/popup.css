@@ -368,6 +368,21 @@ body {
   color: #dc2626;
 }
 
+#sfx-hints-label {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  font-size: 12px;
+  color: #444;
+  cursor: pointer;
+  user-select: none;
+}
+
+#sfx-hints-checkbox {
+  margin: 0;
+  cursor: pointer;
+}
+
 /* ── Routing line ─────────────────────────────────────────────────────────── */
 
 #sfx-routing-section {

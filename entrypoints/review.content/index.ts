@@ -73,6 +73,12 @@ export default defineContentScript({
                   (err: unknown) => toast(`Could not load pins — ${String(err)}`, true)
                 );
               }
+            },
+            // onDiscard: re-arm pick mode only (nothing was written → no pin re-fetch).
+            // Fires on Discard/Esc; never on Send success (onSent owns that path) so
+            // pick mode is never double-armed for a single card close.
+            () => {
+              reArm();
             }
           );
         });

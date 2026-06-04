@@ -33,9 +33,11 @@ export const sfxOriginMap = storage.defineItem<Record<string, string>>(
 );
 
 /** Extension preferences */
-export const sfxPrefs = storage.defineItem<{ reviewMode: Record<string, boolean> }>(
+export const sfxPrefs = storage.defineItem<{ reviewMode: Record<string, boolean>; showHints: boolean }>(
   'local:sfxPrefs',
-  { fallback: { reviewMode: {} } }
+  // showHints defaults ON. Note: prefs persisted before this field existed will
+  // lack showHints — read sites must treat missing as default (prefs.showHints !== false).
+  { fallback: { reviewMode: {}, showHints: true } }
 );
 
 // ---------------------------------------------------------------------------

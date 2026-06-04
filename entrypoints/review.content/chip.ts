@@ -18,6 +18,7 @@
 import { SFX_MSG, SFX_SET_ROUTE, SFX_GET_TAB_ID } from '../../lib/types.js';
 import type { HostEntry, AnnotationPayload } from '../../lib/types.js';
 import { enterPickMode, exitPickMode } from './picker.js';
+import { sfxPrefs } from '../../lib/storage.js';
 
 // ---------------------------------------------------------------------------
 // Types (local to this module)
@@ -174,24 +175,36 @@ export function mountChip(
   }
 
   /** Enter pick mode with the standard callbacks. Reusable so the element card
-   *  can re-arm it after a successful Send (sticky-picker UX). */
+   *  can re-arm it after a successful Send / Discard (sticky-picker UX).
+   *
+   *  Reads the showHints pref first (default ON when missing), then enters pick
+   *  mode in the .then. The async read does not break re-arm: activatePicker()
+   *  runs synchronously so the button reflects active state immediately, and
+   *  enterPickMode is idempotent (exits first if already active). */
   function startPick(): void {
     activatePicker();
-    enterPickMode(
-      container,
-      // onElementClick: pick mode already exited inside picker.ts on click;
-      // reset button visual + invoke injected onPickerClick callback (Plan 03).
-      // The 2nd arg re-enters pick mode — the element card calls it after Send.
-      (el: Element) => {
-        deactivatePicker();
-        onPickerClick?.(el, () => startPick());
-      },
-      // onEsc: reset button visual + return focus to picker button (UI-SPEC §Focus)
-      () => {
-        deactivatePicker();
-        pickerBtn.focus();
-      }
-    );
+    sfxPrefs
+      .getValue()
+      .then(prefs => ({ showHints: prefs.showHints !== false }))
+      .catch(() => ({ showHints: true })) // default ON if the read fails
+      .then(opts => {
+        enterPickMode(
+          container,
+          // onElementClick: pick mode already exited inside picker.ts on confirm;
+          // reset button visual + invoke injected onPickerClick callback (Plan 03).
+          // The 2nd arg re-enters pick mode — the element card calls it after Send/Discard.
+          (el: Element) => {
+            deactivatePicker();
+            onPickerClick?.(el, () => startPick());
+          },
+          // onEsc: reset button visual + return focus to picker button (UI-SPEC §Focus)
+          () => {
+            deactivatePicker();
+            pickerBtn.focus();
+          },
+          opts
+        );
+      });
   }
 
   pickerBtn.addEventListener('click', () => {
@@ -470,23 +483,29 @@ function wireSendButton(
       screenshots: [],
     };
 
-    chrome.runtime.sendMessage(
-      { type: SFX_MSG.SEND_ANNOTATION, tabId, payload },
-      (resp: AnnotationResponse | undefined) => {
-        sendBtn.disabled = false;
-        // WR-02: guard resp against undefined
-        if (chrome.runtime.lastError || !resp) {
-          showFeedbackFn(feedback, 'SW error: ' + (chrome.runtime.lastError?.message ?? 'no response'), true);
-          return;
+    // REL-01: sendMessage can throw synchronously if the extension is disabled mid-flight — never silent
+    try {
+      chrome.runtime.sendMessage(
+        { type: SFX_MSG.SEND_ANNOTATION, tabId, payload },
+        (resp: AnnotationResponse | undefined) => {
+          sendBtn.disabled = false;
+          // WR-02: guard resp against undefined
+          if (chrome.runtime.lastError || !resp) {
+            showFeedbackFn(feedback, 'SW error: ' + (chrome.runtime.lastError?.message ?? 'no response'), true);
+            return;
+          }
+          if (resp.ok) {
+            showFeedbackFn(feedback, `sent ✓ ${resp.file}`, false);
+          } else {
+            // Never silent — show error inline (REL-01)
+            showFeedbackFn(feedback, resp.error, true);
+          }
         }
-        if (resp.ok) {
-          showFeedbackFn(feedback, `sent ✓ ${resp.file}`, false);
-        } else {
-          // Never silent — show error inline (REL-01)
-          showFeedbackFn(feedback, resp.error, true);
-        }
-      }
-    );
+      );
+    } catch (e) {
+      sendBtn.disabled = false;
+      showFeedbackFn(feedback, 'Extension error: ' + (e instanceof Error ? e.message : String(e)), true);
+    }
   };
 }
 

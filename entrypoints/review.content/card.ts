@@ -422,45 +422,58 @@ function _doSend(
   }
 
   // SW relay — mirrors chip.ts wireSendButton exactly (INVARIANT B: no direct fetch)
-  chrome.runtime.sendMessage(
-    { type: SFX_MSG.SEND_ANNOTATION, tabId, payload },
-    (resp: AnnotationResponse | undefined) => {
-      // WR-02: guard both lastError AND resp — never silent (REL-01)
-      if (chrome.runtime.lastError || !resp) {
-        const outcome: SendOutcome = { kind: 'channel-dead', lastErrorMessage: chrome.runtime.lastError?.message };
-        const spec = mapSendOutcome(outcome);
-        showToastFn(spec.message, spec.isError);
-        // Restore controls so user can retry
-        sendBtn.disabled = false;
-        sendBtn.textContent = 'Send';
-        cancelBtn.disabled = false;
-        textarea.readOnly = false;
-        return;
-      }
+  // REL-01: sendMessage can throw synchronously if the extension is disabled mid-flight — never silent
+  try {
+    chrome.runtime.sendMessage(
+      { type: SFX_MSG.SEND_ANNOTATION, tabId, payload },
+      (resp: AnnotationResponse | undefined) => {
+        // WR-02: guard both lastError AND resp — never silent (REL-01)
+        if (chrome.runtime.lastError || !resp) {
+          const outcome: SendOutcome = { kind: 'channel-dead', lastErrorMessage: chrome.runtime.lastError?.message };
+          const spec = mapSendOutcome(outcome);
+          showToastFn(spec.message, spec.isError);
+          // Restore controls so user can retry
+          sendBtn.disabled = false;
+          sendBtn.textContent = 'Send';
+          cancelBtn.disabled = false;
+          textarea.readOnly = false;
+          return;
+        }
 
-      if (resp.ok) {
-        // resp.file is the exact host-returned filename — never client-reconstructed
-        const outcome: SendOutcome = { kind: 'ok', file: resp.file };
-        const spec = mapSendOutcome(outcome);
-        showToastFn(spec.message, spec.isError);
-        _doClose(onDismiss);
-        // Phase 6: notify after-Send hook (pin re-fetch) — called AFTER dismiss
-        onSent?.();
-      } else {
-        // Error: card stays open; restore controls (user can retry)
-        const outcome: SendOutcome = { kind: 'relay-error', error: resp.error };
-        const spec = mapSendOutcome(outcome);
-        showToastFn(spec.message, spec.isError);
-        sendBtn.textContent = 'Send';
-        cancelBtn.disabled = false;
-        textarea.readOnly = false;
-        // Re-apply disabled rule based on current textarea content (WR-02: removed
-        // the preceding sendBtn.disabled=false which was immediately overwritten here)
-        const hasText = textarea.value.trim().length > 0;
-        sendBtn.disabled = !hasText;
+        if (resp.ok) {
+          // resp.file is the exact host-returned filename — never client-reconstructed
+          const outcome: SendOutcome = { kind: 'ok', file: resp.file };
+          const spec = mapSendOutcome(outcome);
+          showToastFn(spec.message, spec.isError);
+          _doClose(onDismiss);
+          // Phase 6: notify after-Send hook (pin re-fetch) — called AFTER dismiss
+          onSent?.();
+        } else {
+          // Error: card stays open; restore controls (user can retry)
+          const outcome: SendOutcome = { kind: 'relay-error', error: resp.error };
+          const spec = mapSendOutcome(outcome);
+          showToastFn(spec.message, spec.isError);
+          sendBtn.textContent = 'Send';
+          cancelBtn.disabled = false;
+          textarea.readOnly = false;
+          // Re-apply disabled rule based on current textarea content (WR-02: removed
+          // the preceding sendBtn.disabled=false which was immediately overwritten here)
+          const hasText = textarea.value.trim().length > 0;
+          sendBtn.disabled = !hasText;
+        }
       }
-    }
-  );
+    );
+  } catch (e) {
+    // Synchronous throw (extension disabled) — reproduce the channel-dead branch (REL-01)
+    const outcome: SendOutcome = { kind: 'channel-dead', lastErrorMessage: e instanceof Error ? e.message : String(e) };
+    const spec = mapSendOutcome(outcome);
+    showToastFn(spec.message, spec.isError);
+    // Restore controls so user can retry
+    sendBtn.disabled = false;
+    sendBtn.textContent = 'Send';
+    cancelBtn.disabled = false;
+    textarea.readOnly = false;
+  }
 }
 
 // ---------------------------------------------------------------------------
@@ -485,6 +498,11 @@ function _doSend(
  * @param onSent       Optional — called ONLY after a successful Send (not on
  *                     Discard/error). Used to re-arm pick mode so the user can
  *                     immediately pick the next element (sticky-picker UX).
+ * @param onDiscard    Optional — called ONLY when the card is dismissed WITHOUT
+ *                     sending (Discard button or Esc). Mirrors onSent's re-arm so
+ *                     cancelling an element note re-arms pick mode too (does NOT
+ *                     fire on successful Send — onSent owns that path; avoids
+ *                     double-arming).
  */
 export function openElementCard(
   container: HTMLElement,
@@ -492,7 +510,8 @@ export function openElementCard(
   elementCtx: ElementContext,
   onDismiss: () => void,
   showToastFn: (msg: string, isError: boolean) => void,
-  onSent?: () => void
+  onSent?: () => void,
+  onDiscard?: () => void
 ): void {
   // FREE-02 compatible: single-card guard (shared with openCard via card-state.ts)
   const decision = tryOpenCard();
@@ -660,6 +679,8 @@ export function openElementCard(
     if (e.key === 'Escape') {
       e.preventDefault();
       _doClose(onDismiss);
+      // Discard path (Esc) — re-arm pick mode (onSent owns the Send path)
+      onDiscard?.();
     } else if (e.key === 'Enter' && (e.ctrlKey || e.metaKey)) {
       e.preventDefault();
       if (!sendBtn.disabled) {
@@ -673,6 +694,8 @@ export function openElementCard(
   // -------------------------------------------------------------------------
   discardBtn.addEventListener('click', () => {
     _doClose(onDismiss);
+    // Discard path — re-arm pick mode (onSent owns the Send path)
+    onDiscard?.();
   });
 
   // -------------------------------------------------------------------------
@@ -869,39 +892,50 @@ function _doElementSend(
     }
 
     // Step 8: SW relay (INVARIANT B — no direct fetch)
-    chrome.runtime.sendMessage(
-      { type: SFX_MSG.SEND_ANNOTATION, tabId, payload },
-      (resp: AnnotationResponse | undefined) => {
-        // Step 9: guard both lastError AND resp — never silent (REL-01)
-        if (chrome.runtime.lastError || !resp) {
-          const outcome: SendOutcome = { kind: 'channel-dead', lastErrorMessage: chrome.runtime.lastError?.message };
-          const spec = mapSendOutcome(outcome);
-          showToastFn(spec.message, spec.isError);
-          restoreControls();
-          // Re-apply disabled rule (mirrors _doSend pattern)
-          sendBtn.disabled = textarea.value.trim().length === 0;
-          return;
-        }
+    // REL-01: sendMessage can throw synchronously if the extension is disabled mid-flight — never silent
+    try {
+      chrome.runtime.sendMessage(
+        { type: SFX_MSG.SEND_ANNOTATION, tabId, payload },
+        (resp: AnnotationResponse | undefined) => {
+          // Step 9: guard both lastError AND resp — never silent (REL-01)
+          if (chrome.runtime.lastError || !resp) {
+            const outcome: SendOutcome = { kind: 'channel-dead', lastErrorMessage: chrome.runtime.lastError?.message };
+            const spec = mapSendOutcome(outcome);
+            showToastFn(spec.message, spec.isError);
+            restoreControls();
+            // Re-apply disabled rule (mirrors _doSend pattern)
+            sendBtn.disabled = textarea.value.trim().length === 0;
+            return;
+          }
 
-        if (resp.ok) {
-          const outcome: SendOutcome = { kind: 'ok', file: resp.file };
-          const spec = mapSendOutcome(outcome);
-          showToastFn(spec.message, spec.isError);
-          _doClose(onDismiss);
-          // Sticky-picker UX: re-arm pick mode after a successful element Send
-          // so the user can immediately pick the next element (success only —
-          // never on Discard/error).
-          onSent?.();
-        } else {
-          const outcome: SendOutcome = { kind: 'relay-error', error: resp.error };
-          const spec = mapSendOutcome(outcome);
-          showToastFn(spec.message, spec.isError);
-          restoreControls();
-          // Re-apply disabled rule (mirrors _doSend pattern)
-          sendBtn.disabled = textarea.value.trim().length === 0;
+          if (resp.ok) {
+            const outcome: SendOutcome = { kind: 'ok', file: resp.file };
+            const spec = mapSendOutcome(outcome);
+            showToastFn(spec.message, spec.isError);
+            _doClose(onDismiss);
+            // Sticky-picker UX: re-arm pick mode after a successful element Send
+            // so the user can immediately pick the next element (success only —
+            // never on Discard/error).
+            onSent?.();
+          } else {
+            const outcome: SendOutcome = { kind: 'relay-error', error: resp.error };
+            const spec = mapSendOutcome(outcome);
+            showToastFn(spec.message, spec.isError);
+            restoreControls();
+            // Re-apply disabled rule (mirrors _doSend pattern)
+            sendBtn.disabled = textarea.value.trim().length === 0;
+          }
         }
-      }
-    );
+      );
+    } catch (e) {
+      // Synchronous throw (extension disabled) — reproduce the channel-dead branch (REL-01)
+      const outcome: SendOutcome = { kind: 'channel-dead', lastErrorMessage: e instanceof Error ? e.message : String(e) };
+      const spec = mapSendOutcome(outcome);
+      showToastFn(spec.message, spec.isError);
+      restoreControls();
+      // Re-apply disabled rule (mirrors _doSend pattern)
+      sendBtn.disabled = textarea.value.trim().length === 0;
+    }
   })();
 }
 
