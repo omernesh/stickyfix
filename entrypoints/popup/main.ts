@@ -15,7 +15,7 @@
  */
 
 import { SFX_MSG } from '../../lib/types.js';
-import type { HostEntry, MsgAddHost, MsgRemoveHost } from '../../lib/types.js';
+import type { HostEntry, MsgAddHost, MsgRemoveHost, MsgPairNative } from '../../lib/types.js';
 import { sfxRegistry, sfxTokens, sfxPrefs } from '../../lib/storage.js';
 
 // ---------------------------------------------------------------------------
@@ -37,6 +37,13 @@ const toggleErrorEl = document.getElementById('sfx-toggle-error') as HTMLElement
 const hintsCheckbox = document.getElementById('sfx-hints-checkbox') as HTMLInputElement;
 const routingLineEl = document.getElementById('sfx-routing-line')!;
 
+// Pairing banner elements (Phase 9 — additive, always in DOM)
+const pairingBanner = document.getElementById('sfx-pairing-banner') as HTMLElement;
+const pairingStatus = document.getElementById('sfx-pairing-status') as HTMLElement;
+const pairBtn = document.getElementById('sfx-pair-btn') as HTMLButtonElement;
+const pairingDetails = document.getElementById('sfx-pairing-details') as HTMLDetailsElement;
+const pairingErrorDetail = document.getElementById('sfx-pairing-error-detail') as HTMLElement;
+
 // ---------------------------------------------------------------------------
 // Utility: safe text helpers (no innerHTML with host-provided strings)
 // ---------------------------------------------------------------------------
@@ -56,6 +63,148 @@ function el<K extends keyof HTMLElementTagNameMap>(
     }
   }
   return node;
+}
+
+// ---------------------------------------------------------------------------
+// Pairing banner — state machine (09-UI-SPEC states 1-5)
+// ---------------------------------------------------------------------------
+
+/**
+ * State 1: show banner, set status text, reveal Pair button.
+ * Triggered on popup open when sfxRegistry is empty (fresh install).
+ */
+function showPairingState1(): void {
+  pairingBanner.hidden = false;
+
+  pairingStatus.className = '';
+  pairingStatus.textContent = 'Host found — click to pair';
+
+  pairBtn.hidden = false;
+  pairBtn.disabled = false;
+  pairBtn.className = '';
+  pairBtn.textContent = 'Pair with host';
+
+  pairingDetails.hidden = true;
+}
+
+/**
+ * State 2: pairing in progress — disable button, show spinner class.
+ */
+function showPairingState2(): void {
+  pairingBanner.hidden = false;
+
+  pairingStatus.className = '';
+  pairingStatus.textContent = 'Pairing…';
+
+  pairBtn.hidden = false;
+  pairBtn.disabled = true;
+  pairBtn.classList.add('sfx-pairing');
+  pairBtn.textContent = 'Pairing…';
+}
+
+/**
+ * State 3: paired — show success message, hide button, schedule hide.
+ * After 1200ms auto-transitions to state 5 (banner hidden).
+ */
+function showPairingState3(name: string): void {
+  pairingBanner.hidden = false;
+
+  pairingStatus.className = 'sfx-pairing-status--paired';
+  // Phase 8 UAT finding: MUST NOT use checkmark alone — use word + glyph (09-UI-SPEC Color note)
+  pairingStatus.textContent = '● Paired with ' + name;
+
+  pairBtn.hidden = true;
+  pairBtn.disabled = false;
+  pairBtn.className = '';
+
+  pairingDetails.hidden = true;
+
+  // Auto-dismiss after 1200ms (UI-SPEC state 3 duration), then focus Review Mode btn
+  setTimeout(() => {
+    pairingBanner.hidden = true;
+    reviewBtn.focus();
+  }, 1200);
+}
+
+/**
+ * State 4: pairing failed — show error, re-enable Retry button, show details.
+ */
+function showPairingState4(error: string): void {
+  pairingBanner.hidden = false;
+
+  pairingStatus.className = 'sfx-pairing-status--failed';
+  // Build the error message as DOM nodes (no innerHTML with user-controlled strings)
+  while (pairingStatus.firstChild) {
+    pairingStatus.removeChild(pairingStatus.firstChild);
+  }
+  const line1 = document.createTextNode('Auto-pair failed. Run:');
+  const br1 = document.createElement('br');
+  const code = document.createElement('code');
+  code.textContent = 'npx stickyfix init';
+  const br2 = document.createElement('br');
+  const line3 = document.createTextNode('Then click Refresh, or enter your token below.');
+  pairingStatus.appendChild(line1);
+  pairingStatus.appendChild(br1);
+  pairingStatus.appendChild(code);
+  pairingStatus.appendChild(br2);
+  pairingStatus.appendChild(line3);
+
+  pairBtn.hidden = false;
+  pairBtn.disabled = false;
+  pairBtn.className = '';
+  pairBtn.textContent = 'Retry';
+
+  // Show error detail in collapsible <details> if non-empty
+  if (error) {
+    pairingErrorDetail.textContent = error;
+    pairingDetails.hidden = false;
+    pairingDetails.open = false;
+  } else {
+    pairingDetails.hidden = true;
+  }
+
+  // Focus the retry button (UI-SPEC focus management)
+  pairBtn.focus();
+}
+
+/**
+ * State 5: already paired (returning user) — banner stays hidden.
+ * The existing host list with green dot communicates paired status.
+ */
+function showPairingState5(): void {
+  pairingBanner.hidden = true;
+}
+
+/**
+ * doPair — invoked by Pair button click and Retry button click.
+ * Sends PAIR_NATIVE to SW, handles response and updates state.
+ */
+async function doPair(registry: Record<string, HostEntry>, tokens: Record<string, string>): Promise<void> {
+  showPairingState2();
+
+  let resp: { ok: boolean; name?: string; error?: string } | null = null;
+  try {
+    const msg: MsgPairNative = { type: SFX_MSG.PAIR_NATIVE };
+    resp = await chrome.runtime.sendMessage(msg);
+  } catch (err) {
+    resp = { ok: false, error: String(err) };
+  }
+
+  if (resp && resp.ok && typeof resp.name === 'string') {
+    showPairingState3(resp.name);
+    // Re-render host list now (banner still visible for 1200ms — host row with green dot appears)
+    const [allRegistry, allTokensNow] = await Promise.all([
+      sfxRegistry.getValue(),
+      sfxTokens.getValue(),
+    ]);
+    renderHosts(allRegistry, allTokensNow);
+  } else {
+    showPairingState4(resp?.error ?? 'Unknown error');
+  }
+
+  // Suppress unused-param lint — registry and tokens provided by caller for future use
+  void registry;
+  void tokens;
 }
 
 // ---------------------------------------------------------------------------
@@ -583,6 +732,22 @@ reviewBtn.addEventListener('click', async () => {
 });
 
 // ---------------------------------------------------------------------------
+// Pair button click handler — wired once; doPair is invoked on each click
+// (covers both initial "Pair with host" and "Retry" states)
+// ---------------------------------------------------------------------------
+
+pairBtn.addEventListener('click', () => {
+  // Read registry+tokens at click time (Pitfall 1 — re-read, not cached)
+  void (async () => {
+    const [registry, tokens] = await Promise.all([
+      sfxRegistry.getValue(),
+      sfxTokens.getValue(),
+    ]);
+    await doPair(registry, tokens);
+  })();
+});
+
+// ---------------------------------------------------------------------------
 // Initialization — runs on popup open
 // ---------------------------------------------------------------------------
 
@@ -597,6 +762,17 @@ async function init(): Promise<void> {
   await loadReviewState();
   await loadHintsPref();
   await renderRoutingLine();
+
+  // Pairing banner state machine (09-UI-SPEC Interaction Contract):
+  //   - Empty registry (fresh install / cleared state) → state 1 (show banner, focus btn)
+  //   - Non-empty registry (returning user) → state 5 (banner stays hidden)
+  // Auto-fire on popup open is intentionally NOT done — button-driven per UI-SPEC rationale.
+  if (Object.keys(registry).length === 0) {
+    showPairingState1();
+    pairBtn.focus(); // focus the primary action for fresh-install UX
+  } else {
+    showPairingState5();
+  }
 }
 
 init().catch(err => {

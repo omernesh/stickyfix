@@ -395,3 +395,125 @@ body {
   color: #555;
   font-family: ui-monospace, 'Cascadia Code', 'Courier New', monospace;
 }
+
+/* ── Pairing banner ──────────────────────────────────────────────────────────── */
+
+#sfx-pairing-banner {
+  padding: 10px 12px;
+  background: #fff;
+  border-bottom: 1px solid #e0e0e0;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+/* Live region — inline block; JS sets text content only */
+#sfx-pairing-status {
+  font-size: 12px;
+  color: #444;
+  line-height: 1.5;
+}
+
+/* Paired success state modifier */
+#sfx-pairing-status.sfx-pairing-status--paired {
+  font-size: 13px;
+  font-weight: 600;
+  color: #16a34a;
+}
+
+/* Failed state modifier */
+#sfx-pairing-status.sfx-pairing-status--failed {
+  color: #dc2626;
+}
+
+/* Pair / Retry button — same visual as #sfx-review-btn */
+#sfx-pair-btn {
+  padding: 7px 14px;
+  font-size: 13px;
+  font-weight: 600;
+  border: none;
+  border-radius: 5px;
+  background: #111;
+  color: #fff;
+  cursor: pointer;
+  width: 100%;
+  text-align: center;
+  transition: background 0.15s;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
+}
+
+#sfx-pair-btn:hover {
+  background: #333;
+}
+
+#sfx-pair-btn:disabled {
+  background: #999;
+  cursor: not-allowed;
+}
+
+#sfx-pair-btn:focus-visible {
+  outline: 2px solid #111;
+  outline-offset: 2px;
+}
+
+/* Spinner (shown when #sfx-pair-btn has .sfx-pairing class) */
+#sfx-pair-btn.sfx-pairing::before {
+  content: '';
+  display: inline-block;
+  width: 10px;
+  height: 10px;
+  border: 2px solid rgba(255, 255, 255, 0.35);
+  border-top-color: #fff;
+  border-radius: 50%;
+  animation: sfx-spin 0.6s linear infinite;
+  flex-shrink: 0;
+}
+
+@keyframes sfx-spin {
+  to { transform: rotate(360deg); }
+}
+
+/* Error details disclosure */
+#sfx-pairing-details {
+  margin-top: 4px;
+}
+
+#sfx-pairing-details summary {
+  font-size: 11px;
+  color: #888;
+  cursor: pointer;
+  user-select: none;
+  list-style: none;
+}
+
+#sfx-pairing-details summary::-webkit-details-marker {
+  display: none;
+}
+
+#sfx-pairing-details summary::before {
+  content: '▸ ';
+  font-size: 9px;
+}
+
+details[open] #sfx-pairing-details summary::before {
+  content: '▾ ';
+}
+
+#sfx-pairing-error-detail {
+  font-family: ui-monospace, 'Cascadia Code', 'Courier New', monospace;
+  font-size: 10px;
+  color: #888;
+  word-break: break-all;
+  padding: 4px 0;
+  line-height: 1.5;
+}
+
+/* Accessibility: disable spinner animation for users who prefer reduced motion */
+@media (prefers-reduced-motion: reduce) {
+  #sfx-pair-btn.sfx-pairing::before {
+    animation: none;
+  }
+}

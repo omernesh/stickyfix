@@ -16,6 +16,16 @@
         <button id="sfx-add-btn" type="button" title="Add host by port">+</button>
       </header>
 
+      <!-- Pairing banner (hidden by default; shown by main.ts in states 1-4) -->
+      <section id="sfx-pairing-banner" hidden aria-label="Pairing status">
+        <div id="sfx-pairing-status" role="status" aria-live="polite" aria-atomic="true"></div>
+        <button id="sfx-pair-btn" type="button" hidden aria-label="Pair with host"></button>
+        <details id="sfx-pairing-details" hidden>
+          <summary>Details</summary>
+          <p id="sfx-pairing-error-detail"></p>
+        </details>
+      </section>
+
       <!-- Add host form (hidden by default) -->
       <div id="sfx-add-form" hidden>
         <input id="sfx-add-port" type="number" value="39240" min="1" max="65535" aria-label="host port" />
@@ -29,7 +39,7 @@
       <!-- Empty state (shown when registry is empty) -->
       <section id="sfx-empty-state" hidden>
         <p id="sfx-empty-msg">No hosts found on 39240&#x2013;39260.</p>
-        <p id="sfx-empty-hint">Start one with:<br><code>npm run host -- --root &lt;dir&gt;</code></p>
+        <p id="sfx-empty-hint">Start one with:<br><code>npx stickyfix init</code></p>
       </section>
 
       <!-- Review Mode toggle -->
