@@ -14,7 +14,12 @@ export default defineConfig({
     // Phase 3 additions — D-04 / EXT-01
     // Phase 9 addition — ONB-02/03: native messaging for auto-pairing (extension-only API)
     permissions: ['activeTab', 'scripting', 'storage', 'tabs', 'nativeMessaging'],
-    // key: '<CWS public key>'  // Add after Chrome Web Store upload for stable extension ID (RESEARCH Pattern 3)
+    // Stable extension ID (Phase 9 enhancement): base64 SPKI/DER public key.
+    // Generated with Node crypto.generateKeyPairSync('rsa',{modulusLength:2048}).
+    // Private key is in .keys/stickyfix-extension.pem (gitignored — needed only for CWS publish).
+    // Derived extension ID: ccdfmbhdcafhmnnnfjpbhgebfkfgjgca
+    // To re-derive: sha256(DER-public-key-bytes)[0..15] → hex → map 0-9a-f to a-p
+    key: 'MIIBIjANBgkqhkiG9w0BAQEFAAOCAQ8AMIIBCgKCAQEA1RFrtpIlsiHwm21+ISi8v5381HQeJq2pw4lgbvqQ2a6o2uZ6H1uHfT+1xRy2msqHzXMOJOhwfAKuwBoebATIFDcms132Msz11DJPHUgoVX29sh9PWxUN5aJ/KovtPgIXoEDTKg/QtV+C9Hza0bcdncqymi9xBw5De/rRn/ZQdkXx2ZFiIm6AuHE0Q4dJrSPLqRLEFxP7mf+/SNPQ0LGDYsWUBbDLz8ksMU0VrrDDtRbDSPhBglxNzVYv00MYpwPEHijBCG9wQ57a34tDuA2/TFvNSwpbkWIYiGe6GyN5DvVHdIZgHcmTxSoY43Xu8EAvX+isRp3DdK8j3tAx1C/wIwIDAQAB',
     host_permissions: ['http://127.0.0.1/*', 'http://localhost/*'],
     optional_host_permissions: ['<all_urls>'],
     // Note: no static content_scripts — review UI is injected on-demand via

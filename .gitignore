@@ -47,3 +47,9 @@ private/
 # Stray JS files that tsc may emit next to source files (compiled output belongs in dist/)
 lib/*.js
 lib/test/*.js
+
+# Extension signing keys — private key MUST NEVER be committed (only .keys/manifest-key.txt
+# and .keys/extension-id.txt are committed as they are derived public data)
+.keys/*.pem
+.keys/*.p12
+.keys/*.key
