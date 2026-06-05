@@ -113,11 +113,11 @@ Requirements for initial release. Each maps to roadmap phases.
 
 ### Onboarding & Turnkey Distribution (ONB)
 
-- [ ] **ONB-01**: A turnkey, one-step setup (double-click installer / single bootstrap command, per-OS — not Windows-only) installs the host and the browser extension without manual repo cloning, `npm install`, or terminal steps
+- [x] **ONB-01**: A turnkey, one-step setup (double-click installer / single bootstrap command, per-OS — not Windows-only) installs the host and the browser extension without manual repo cloning, `npm install`, or terminal steps
 - [ ] **ONB-02**: The user never manually copies or pastes a token — clicking the extension icon obtains and stores the running host's token automatically (auto-pair) or via a single one-click "Pair" action
 - [ ] **ONB-03**: Auto-pairing preserves the security model — an arbitrary web origin can NEVER obtain the token or write notes; pairing happens over a loopback-only, time-boxed window or a native-messaging channel, with the `127.0.0.1`-bind and origin-trust invariants intact
-- [ ] **ONB-04**: The host is auto-started / discoverable without the user running a manual terminal command (launcher, tray app, or native-messaging-spawned process)
-- [ ] **ONB-05**: Uninstall / teardown is clean — removes host artifacts and native-messaging manifests, leaves no orphan processes or stray registry/config entries
+- [x] **ONB-04**: The host is auto-started / discoverable without the user running a manual terminal command (launcher, tray app, or native-messaging-spawned process)
+- [x] **ONB-05**: Uninstall / teardown is clean — removes host artifacts and native-messaging manifests, leaves no orphan processes or stray registry/config entries
 - [ ] **ONB-06**: (cross-browser, stretch) A documented packaging path covers Edge (Chromium drop-in), Firefox, and Safari — promotes FUT-01 into scope
 
 ## v2 Requirements
@@ -223,11 +223,11 @@ Which phases cover which requirements. Updated during roadmap creation.
 | SKILL-05 | Phase 7 | Complete |
 | DOC-01 | Phase 7 | Complete |
 | DOC-02 | Phase 7 | Complete |
-| ONB-01 | Phase 9 | Pending |
+| ONB-01 | Phase 9 | Complete |
 | ONB-02 | Phase 9 | Pending |
 | ONB-03 | Phase 9 | Pending |
-| ONB-04 | Phase 9 | Pending |
-| ONB-05 | Phase 9 | Pending |
+| ONB-04 | Phase 9 | Complete |
+| ONB-05 | Phase 9 | Complete |
 | ONB-06 | Phase 9 | Pending |
 
 **Coverage:**

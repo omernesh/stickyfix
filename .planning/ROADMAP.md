@@ -276,7 +276,7 @@ Plans:
 
 **Wave 1**
 
-- [ ] 09-01-PLAN.md — Foundation: native-msg stdio framing + manifest writer/per-OS paths/registry/uninstall-enumerator + folder-picker arg builder + .stickyfix-port write + node:test (ONB-01/04/05)
+- [x] 09-01-PLAN.md — Foundation: native-msg stdio framing + manifest writer/per-OS paths/registry/uninstall-enumerator + folder-picker arg builder + .stickyfix-port write + node:test (ONB-01/04/05)
 - [ ] 09-03-PLAN.md — Cross-browser docs: docs/cross-browser.md (Edge now + Firefox/Safari documented-only) + section-check script + README link (ONB-06)
 
 **Wave 2** *(blocked on 09-01)*
@@ -304,4 +304,4 @@ Phases execute in numeric order: 1 → 2 → 3 → 4 → 5 → 6 → 7 → 8 →
 | 6. Region Capture + Visual Design + Persistent Pins | 4/4 | Complete   | 2026-06-03 |
 | 7. review-notes Skill + Docs | 3/3 | Complete    | 2026-06-03 |
 | 8. Hardening + Pre-Release Audit | 4/4 | Complete   | 2026-06-03 |
-| 9. Turnkey Onboarding & Cross-Browser Distribution | 0/4 | Planned | - |
+| 9. Turnkey Onboarding & Cross-Browser Distribution | 1/4 | In Progress|  |
