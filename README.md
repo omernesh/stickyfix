@@ -1,141 +1,151 @@
 # stickyfix
 
-> Pin sticky notes on any web page. Your AI coding agent reads them as markdown and fixes them. Repeat.
+> Stick a note on any web page. Your AI coding agent reads it and fixes it. That's the whole loop.
 
-**stickyfix** turns visual UI review into a tight, file-based loop. Instead of screenshotting your app, pasting it into a chat, and describing what's wrong, you:
+## The problem you already know too well
 
-1. Toggle **Review Mode** on any page (a Chrome extension).
-2. Drop **sticky notes** — either a free-floating note (`+`) or an **element-anchored** note (click an element and it auto-captures the selector, computed styles, outerHTML, screenshot, and more).
-3. Each note is written as a **markdown file** into your project's `notes/` folder by a tiny local host.
-4. Tell your AI coding agent **"read my notes"** — it reads the unread `.md` files, fixes them, and renames each to `*.read.md` so the next pass only sees what's new.
-5. Review again. Iterate.
+You spot something off in your UI — a button that's 4px too low, a heading that wraps weird, a modal that scrolls when it shouldn't. So you screenshot it. Paste it into a chat. Type a paragraph explaining *which* button, on *which* page, and what "right" looks like. Your agent guesses. You screenshot again. Round and round.
 
-No cloud. No accounts. Localhost-only. Your notes never leave your machine.
+That ping-pong is slow, lossy, and maddening — and it throws away everything the browser already knows about the element you're pointing at.
 
-## Quickstart (< 5 minutes)
+**stickyfix kills the ping-pong.** You drop a note *directly on the thing*, and it lands on disk as a precise, context-rich markdown file your agent can just read.
 
-1. **Build** — install dependencies and compile both the extension and host:
-   ```bash
-   npm install
-   npm run build
-   ```
+## How it feels to use
 
-2. **Start the host** — point it at the project you want to review:
-   ```bash
-   npm run host -- --root /path/to/project --origin http://localhost:3000
-   ```
-   The host prints a token on startup — keep that terminal open.
-   (Windows PowerShell users: see the [Windows variants](#running-the-host) section directly below.)
+1. Click into **Review Mode** on any page.
+2. Drop a **sticky note** — free-floating, or click an element to anchor it. Anchored notes auto-capture the CSS selector, computed styles, outerHTML, a screenshot, the React component name, and more. No describing required.
+3. Tell your agent **"read my notes."** It reads the fresh `.md` files, makes the fixes, and marks each one done so the next pass only sees what's new.
+4. Glance, drop a few more, repeat. Your UI gets tighter every loop.
 
-3. **Load the extension** — open `chrome://extensions`, enable **Developer Mode**, click **Load unpacked**, and select the `.output/chrome-mv3/` folder inside this repo.
+No cloud. No accounts. No sign-up. Everything stays on `127.0.0.1` — **your code and your notes never leave your machine.**
 
-4. **Pair the token** — copy the token from the host startup output, then paste it into the extension popup (click the stickyfix icon in your Chrome toolbar).
+## Get started
 
-5. **Drop notes and run the skill** — navigate to your app, click **Enter Review Mode**, drop notes on the page. When you're ready, tell your AI coding agent:
-   > "read my notes"
-   The agent runs the review-notes skill, applies each fix, and renames each note to `*.read.md`. Repeat until your UI is clean.
+> **Developer preview.** stickyfix currently runs as an unpacked Chrome extension plus a tiny local helper. The one-command `npx stickyfix init` and one-click Web Store install are on the way — for now it's the short setup below, and we've made it as close to zero-fuss as a preview can be.
 
-## Running the host
-
-After `npm run build`, start the local host with:
+**1. Grab it and build it (once):**
 
 ```bash
-# bash / macOS / Linux — standard form
-npm run host -- --root /path/to/project --origin http://localhost:3000
+npm install
+npm run build
 ```
 
-**Windows PowerShell** — npm 11.x intercepts unknown `--flags` before passing them on, so use one of these instead:
+**2. Run the installer — it does the fiddly parts for you:**
 
-```powershell
-# Option A: equals-sign form (npm exposes these via npm_config_* env vars internally)
-npm run host -- --root=C:\path\to\project --origin=http://localhost:3000
-
-# Option B: set env vars explicitly, then start
-$env:STICKYFIX_ROOT = "C:\path\to\project"
-$env:STICKYFIX_ORIGINS = "http://localhost:3000"
-npm run host
-
-# Option C: invoke node directly (bypasses npm flag parsing entirely)
-node dist/host/src/index.js --root C:\path\to\project --origin http://localhost:3000
+```bash
+node dist/host/stickyfix-init.cjs init --root /path/to/your/project
 ```
 
-All three options produce the same result. Option B also works when you need multiple origins: set `STICKYFIX_ORIGINS` to a comma-separated list (e.g. `"http://localhost:3000,http://localhost:4000"`).
+This one command:
+- registers the secure pairing channel for you,
+- prints your **extension ID** (it's stable — you'll never copy-paste a token), and
+- drops a **"Stickyfix Host" icon on your Desktop** so you can start the backend with a double-click — no terminal babysitting.
 
-## review-notes Skill
+**3. Load the extension:** open `chrome://extensions`, flip on **Developer Mode**, click **Load unpacked**, and pick the `.output/chrome-mv3/` folder. (The ID matches what the installer printed — nothing to type.)
 
-The **review-notes** skill is the AI agent half of the loop. It processes unread notes in serial order, applies each fix, and renames each note to `*.read.md` — idempotently.
+**4. Start the backend:** double-click the **Stickyfix Host** icon on your Desktop. That's it — no commands, and double-clicking again is safe (it won't launch a second copy).
 
-**Install for Claude Code (project-local):**
+**5. Pair in one click:** open the stickyfix popup in your toolbar and hit **Pair with host**. The token is handed over automatically behind the scenes — you never see it, never paste it. Pair once and it stays paired, even after restarts.
+
+Now open your app, click **Enter Review Mode**, and start dropping notes. When you're ready, tell your AI agent *"read my notes."*
+
+## Tell your agent to read your notes
+
+The **review-notes** skill is the agent half of the loop. It works through your unread notes in order, applies each fix, and quietly marks each one read — so re-running is always safe.
+
+**Claude Code (project-local):**
 
 ```bash
 mkdir -p .claude/skills/review-notes
 cp /path/to/stickyfix/skill/SKILL.md .claude/skills/review-notes/SKILL.md
 ```
 
-**Install for any other folder-reading agent (Cursor, Codex, etc.):**
+**Any other folder-reading agent (Cursor, Codex, etc.):** point it at `skill/SKILL.md` — it's plain markdown, no Claude-specific bits. For example: *"follow the instructions in skill/SKILL.md."*
 
-Point your agent at `skill/SKILL.md` directly — it is a plain markdown file with no Claude-specific frontmatter. Example: "follow the instructions in skill/SKILL.md".
-
-**Trigger phrase:** Tell your agent any of:
+**Just say the word.** Any of these kicks it off:
 
 - "read my notes"
 - "process review notes"
 - "fix sticky notes"
 - "what notes do I have"
 
-**What it does:**
+**Under the hood, it:**
 
-1. Globs `notes/*.md`, excludes `*.read.md`, sorts ascending by leading 4-digit serial.
-2. For each unread note: reads frontmatter + body, opens screenshots (vision), applies the code fix.
-3. Renames the note to `*.read.md` and sets `status: read` in frontmatter — only after the fix succeeds.
-4. Ambiguous notes get `status: flagged` and a `> flagged: <reason>` line; their filename is left unchanged so they surface on the next run.
-5. Reports a terse summary: N fixed, K flagged, J already read.
+1. Finds every unread `notes/*.md` (skips ones already handled), oldest first.
+2. Reads the note plus its screenshots, then makes the code change.
+3. Marks the note read — only *after* the fix lands.
+4. Flags anything ambiguous instead of guessing, so it surfaces again next run.
+5. Gives you a one-line recap: N fixed, K flagged, J already done.
 
-Re-running on a fully-processed directory is a no-op ("no unread notes") — safe to run any time.
+Run it on a clean directory and it just says "nothing to do." Safe to fire any time.
 
-## Security model
+## Your code stays yours
 
-- **127.0.0.1 only.** The host binds to `127.0.0.1`, never `0.0.0.0`. It is not reachable from other machines on your network.
-- **Token auth on every write.** Every `POST /annotation` requires the `X-Stickyfix-Token` header. The token is generated at host startup, stored in an owner-readable file, and printed to stdout once. Without the token, any local page that guesses the port gets a 401.
-- **Origin trust mapping.** The extension maps each tab origin (e.g. `http://localhost:3000`) to the host instance that claimed it. Notes are routed to the right project automatically — no per-note picks.
-- **Write confinement.** The host only writes `.md` and `.png` files inside the `--root` directory. Path-traversal attempts are rejected with a 400.
-- **12 MB body cap.** Requests larger than 12 MB are rejected with a 413.
+stickyfix is built localhost-first on purpose:
 
-## Troubleshooting
+- **`127.0.0.1` only.** The helper binds to localhost and nothing else — it's not reachable from anywhere on your network.
+- **Authorized writes only.** Every save is token-checked. The token is delivered to the extension over a secure OS channel during pairing — it never travels over the web and you never handle it.
+- **Right project, every time.** Each browser tab's origin is mapped to the matching project, so notes land in the correct folder automatically.
+- **Stays in its lane.** The helper only writes `.md` and `.png` files inside the project folder you chose. Path-traversal tricks are rejected.
+- **Sensible limits.** Oversized payloads are turned away (12 MB cap) so nothing runs away with your disk.
 
-**Token mismatch — extension shows "auth failed"**
+## Works in Chrome and Edge
 
-Re-copy the token from the host's startup output (the line that says `token: ...`) and paste it into the extension popup. The token changes each time the host restarts.
-
-**Cannot connect — extension shows "no host found"**
-
-The host scans ports 39240–39260 for live instances. Make sure `npm run host` is running (it should be printing "listening on 127.0.0.1:392xx"). Check that your `--origin` matches the tab URL's origin exactly (scheme + host + port).
-
-**Windows PowerShell: flags not passed through**
-
-npm 11.x on Windows intercepts `--flags` before forwarding them. Use the equals-sign form, environment variables, or the `node` direct invocation shown in the [Running the host](#running-the-host) section above.
-
-**Notes not appearing on disk**
-
-Confirm the `--root` path is the project directory where you expect the `notes/` folder. The host creates `notes/` automatically on first write. Check the host terminal for any error output.
+Chrome and Microsoft Edge are both supported today (Edge is a drop-in). Firefox and Safari packaging paths are documented for a future release — see [docs/cross-browser.md](docs/cross-browser.md).
 
 ## Demo
 
 ![stickyfix demo](docs/demo-placeholder.png)
 
-*Real demo coming — the placeholder above will be replaced with a recorded GIF.*
+*Recorded walkthrough coming soon — the placeholder above will be replaced with a GIF of the full drop-a-note → "read my notes" loop.*
 
-**How to record the demo (Windows, free tools):**
+## Troubleshooting
 
-1. Install [LICEcap](https://www.cockos.com/licecap/) or [ScreenToGif](https://www.screentogif.com/) — both are free and require no account.
-2. Start the host, load the extension, open your app in Chrome.
-3. Record the 5-step quickstart flow: build → host start → load unpacked → token paste → drop a note → "read my notes".
-4. Save the output as `docs/demo.gif`.
-5. Replace the `docs/demo-placeholder.png` image reference in this README with `docs/demo.gif`.
+**Popup says it can't reach the host**
 
-## Browser support
+Make sure the backend is running — double-click the **Stickyfix Host** icon on your Desktop. The helper listens on a port in the 39240–39260 range; the popup discovers it automatically.
 
-Chrome and Microsoft Edge are fully supported. For Firefox and Safari packaging paths (FUT-01, v2 scope) see [docs/cross-browser.md](docs/cross-browser.md).
+**Pairing didn't take**
+
+Click **Pair with host** again. If it still won't connect, re-run the installer (`node dist/host/stickyfix-init.cjs init --root /path/to/your/project`) and reload the extension.
+
+**Notes aren't showing up on disk**
+
+Double-check the `--root` you passed the installer points at the project you're reviewing. The `notes/` folder is created automatically on the first save.
+
+**Removing stickyfix**
+
+```bash
+node dist/host/stickyfix-init.cjs uninstall
+```
+
+This cleans up the pairing channel, the desktop launcher, and the local config — no leftovers.
+
+## Advanced: run the backend from a terminal
+
+The desktop icon is the easy path, but you can always start the helper by hand:
+
+```bash
+# bash / macOS / Linux
+npm run host -- --root /path/to/project --origin http://localhost:3000
+```
+
+**Windows PowerShell** — npm 11.x swallows unknown `--flags`, so use one of these:
+
+```powershell
+# equals-sign form
+npm run host -- --root=C:\path\to\project --origin=http://localhost:3000
+
+# or set env vars first
+$env:STICKYFIX_ROOT = "C:\path\to\project"
+$env:STICKYFIX_ORIGINS = "http://localhost:3000"
+npm run host
+
+# or call node directly
+node dist/host/src/index.js --root C:\path\to\project --origin http://localhost:3000
+```
+
+For multiple origins, set `STICKYFIX_ORIGINS` to a comma-separated list (e.g. `"http://localhost:3000,http://localhost:4000"`).
 
 ## Architecture (one-liner)
 
@@ -143,6 +153,8 @@ Chrome and Microsoft Edge are fully supported. For Firefox and Safari packaging 
 [Chrome Extension (MV3)]  --POST /annotation-->  [stickyfix-host (localhost)]  --writes-->  notes/NNNN-<ts>.md
         you annotate                 token-authed, 127.0.0.1 only                 your AI agent reads these
 ```
+
+Pairing rides a separate OS-level native-messaging channel so the token never touches the web; notes themselves flow over the localhost HTTP relay.
 
 ## License & provenance
 
