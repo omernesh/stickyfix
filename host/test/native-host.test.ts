@@ -140,7 +140,7 @@ describe('chunk reassembly — one byte at a time', () => {
       accumulated = Buffer.concat([accumulated, full.slice(i, i + 1)]);
       const { messages, rest } = decodeNativeMessages(accumulated);
       messagesFound = messagesFound.concat(messages);
-      accumulated = rest;
+      accumulated = Buffer.from(rest);
 
       if (i < full.length - 1) {
         // Before the last byte: no complete message yet
@@ -179,9 +179,9 @@ describe('sendNativeMessage — Buffer-only write', () => {
     const expected = encodeNativeMessage(obj);
 
     // Fake writable that captures all writes
-    const written: Buffer[] = [];
+    const written: Uint8Array[] = [];
     const fakeOut = {
-      write(b: Buffer | Uint8Array | string): boolean {
+      write(b: Uint8Array | string): boolean {
         written.push(Buffer.isBuffer(b) ? b : Buffer.from(b as string, 'utf8'));
         return true;
       },
@@ -191,7 +191,7 @@ describe('sendNativeMessage — Buffer-only write', () => {
 
     assert.strictEqual(written.length, 1, 'sendNativeMessage should call write exactly once');
     assert.ok(Buffer.isBuffer(written[0]), 'write must be called with a Buffer (not a string) — Pitfall 2');
-    assert.deepStrictEqual(written[0], expected);
+    assert.deepStrictEqual(Buffer.from(written[0]), expected);
   });
 
   test('write is called exactly once (single atomic Buffer.concat write)', () => {
