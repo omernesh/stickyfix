@@ -268,14 +268,25 @@ Plans:
   4. The host auto-starts / is discoverable with no manual terminal step; uninstall removes host artifacts + native-messaging manifests with no orphan processes or stray config
   5. (stretch) A documented packaging path exists for Edge (Chromium drop-in), Firefox, and Safari
 
-**Open design questions** (for `/gsd:discuss-phase 9`):
+**Design decisions locked** (09-CONTEXT.md): D-01 cross-platform `npx stickyfix init` bootstrapper (no per-OS installer); D-02 native messaging is the pairing channel (no HTTP /pair endpoint); D-03 host is native-messaging-spawned on demand (no tray/service); D-04 origin->folder mapping via OS folder dialog on first note; D-05 Edge supported now + Firefox/Safari documented-only (FUT-01). Architecture: native messaging for pairing ONLY (token + port handoff); the per-project HTTP relay is retained for note transport (the 1 MB native-messaging cap rules out a broker for 12 MB screenshots) — SW-as-sole-HTTP-client invariant preserved.
 
-  - Packaging tech: per-OS installer (NSIS/.exe, .pkg, .deb/sh) vs. cross-platform `npx stickyfix init` bootstrapper vs. `pkg`/SEA single binary — must satisfy the cross-platform constraint (no Windows-only deliverable)
-  - Pairing channel: **native messaging** (installer registers the manifest; no HTTP token at all) vs. **time-boxed loopback `/pair` endpoint** (host exposes token only within an N-second window after launch, SW fetches it) vs. `chrome.storage.managed` policy injection
-  - Host lifecycle: tray app / OS service / native-messaging-spawned-on-demand — and how it learns the project `--root`
-  - Cross-browser scope: promote FUT-01 (Firefox/Safari) here, or keep stretch/Edge-only
+**Plans**: 4 plans
 
-**Plans**: TBD
+Plans:
+
+**Wave 1**
+
+- [ ] 09-01-PLAN.md — Foundation: native-msg stdio framing + manifest writer/per-OS paths/registry/uninstall-enumerator + folder-picker arg builder + .stickyfix-port write + node:test (ONB-01/04/05)
+- [ ] 09-03-PLAN.md — Cross-browser docs: docs/cross-browser.md (Edge now + Firefox/Safari documented-only) + section-check script + README link (ONB-06)
+
+**Wave 2** *(blocked on 09-01)*
+
+- [ ] 09-02-PLAN.md — Pairing slice: npx init/uninstall CLI + native-host GET_TOKEN + nativeMessaging perm + SW handlePairNative + popup pairing banner (ONB-01/02/03/04/05)
+
+**Wave 3** *(blocked on 09-02)*
+
+- [ ] 09-04-PLAN.md — Folder-pick slice + SC-3 security proof: native-host PICK_FOLDER + SW handlePickFolder + origin->folder persist + hostile-origin/no-token-endpoint test (ONB-03/04)
+
 **UI hint**: yes (popup pairing flow)
 
 ## Progress
@@ -293,4 +304,4 @@ Phases execute in numeric order: 1 → 2 → 3 → 4 → 5 → 6 → 7 → 8 →
 | 6. Region Capture + Visual Design + Persistent Pins | 4/4 | Complete   | 2026-06-03 |
 | 7. review-notes Skill + Docs | 3/3 | Complete    | 2026-06-03 |
 | 8. Hardening + Pre-Release Audit | 4/4 | Complete   | 2026-06-03 |
-| 9. Turnkey Onboarding & Cross-Browser Distribution | 0/TBD | Not started | - |
+| 9. Turnkey Onboarding & Cross-Browser Distribution | 0/4 | Planned | - |
