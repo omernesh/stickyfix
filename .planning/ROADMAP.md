@@ -281,7 +281,7 @@ Plans:
 
 **Wave 2** *(blocked on 09-01)*
 
-- [ ] 09-02-PLAN.md — Pairing slice: npx init/uninstall CLI + native-host GET_TOKEN + nativeMessaging perm + SW handlePairNative + popup pairing banner (ONB-01/02/03/04/05)
+- [x] 09-02-PLAN.md — Pairing slice: npx init/uninstall CLI + native-host GET_TOKEN + nativeMessaging perm + SW handlePairNative + popup pairing banner (ONB-01/02/03/04/05)
 
 **Wave 3** *(blocked on 09-02)*
 
@@ -304,4 +304,4 @@ Phases execute in numeric order: 1 → 2 → 3 → 4 → 5 → 6 → 7 → 8 →
 | 6. Region Capture + Visual Design + Persistent Pins | 4/4 | Complete   | 2026-06-03 |
 | 7. review-notes Skill + Docs | 3/3 | Complete    | 2026-06-03 |
 | 8. Hardening + Pre-Release Audit | 4/4 | Complete   | 2026-06-03 |
-| 9. Turnkey Onboarding & Cross-Browser Distribution | 2/4 | In Progress|  |
+| 9. Turnkey Onboarding & Cross-Browser Distribution | 3/4 | In Progress|  |
