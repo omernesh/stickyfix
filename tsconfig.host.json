@@ -10,5 +10,5 @@
     "esModuleInterop": true,
     "skipLibCheck": true
   },
-  "include": ["host/src/**/*.ts", "host/test/**/*.ts", "lib/pin-position.ts"]
+  "include": ["bin/**/*.ts", "host/src/**/*.ts", "host/test/**/*.ts", "lib/pin-position.ts"]
 }

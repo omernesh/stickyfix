@@ -4,9 +4,13 @@
   "description": "Pin sticky notes on any page — your AI reads them.",
   "private": true,
   "type": "module",
+  "bin": {
+    "stickyfix": "dist/host/stickyfix-init.cjs"
+  },
   "scripts": {
     "dev": "wxt",
-    "build": "wxt build && tsc -p tsconfig.host.json",
+    "build:host-bin": "npx esbuild bin/stickyfix.ts --platform=node --format=cjs --bundle \"--external:node:*\" \"--banner:js=#!/usr/bin/env node\" --outfile=dist/host/stickyfix-init.cjs && npx esbuild host/src/native-host.ts --platform=node --format=cjs --bundle \"--external:node:*\" --outfile=dist/host/stickyfix-native.cjs",
+    "build": "wxt build && tsc -p tsconfig.host.json && npm run build:host-bin",
     "host": "node dist/host/src/index.js",
     "test:lib": "tsc -p tsconfig.lib.json && node --test \"dist/lib/lib/test/**/*.test.js\"",
     "test": "tsc -p tsconfig.host.json && node --test \"dist/host/test/**/*.test.js\"",
