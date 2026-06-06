@@ -15,6 +15,7 @@ import {
   decodeNativeMessages,
   sendNativeMessage,
 } from '../src/native-msg.js';
+import { validateChosenFolder, handlePickFolder } from '../src/native-host.js';
 
 // ---------------------------------------------------------------------------
 // encodeNativeMessage
@@ -206,5 +207,123 @@ describe('sendNativeMessage — Buffer-only write', () => {
 
     sendNativeMessage(obj, fakeOut as unknown as NodeJS.WritableStream);
     assert.strictEqual(calls.length, 1, 'Must write header+body in ONE Buffer.concat call');
+  });
+});
+
+// ---------------------------------------------------------------------------
+// PICK_FOLDER validation + dispatch (Plan 09-04, T-09-14 / ONB-04)
+// ---------------------------------------------------------------------------
+
+/** Capture a single FOLDER_PICKED frame written by handlePickFolder. */
+function captureFrame(): {
+  out: { write(b: Buffer): boolean };
+  read(): { type?: string; origin?: string; folder?: string | null } | null;
+} {
+  const written: Buffer[] = [];
+  const out = {
+    write(b: Buffer): boolean {
+      written.push(Buffer.from(b));
+      return true;
+    },
+  };
+  return {
+    out,
+    read() {
+      if (written.length === 0) return null;
+      const { messages } = decodeNativeMessages(Buffer.concat(written));
+      return (messages[0] as { type?: string; origin?: string; folder?: string | null }) ?? null;
+    },
+  };
+}
+
+describe('validateChosenFolder — defensive path validation (T-09-14)', () => {
+  let realDir: string;
+
+  test.before(() => {
+    realDir = mkdtempSync(join(tmpdir(), 'sfx-pickfolder-test-'));
+  });
+
+  test.after(() => {
+    rmSync(realDir, { recursive: true, force: true });
+  });
+
+  test('null input → null (user cancelled)', () => {
+    assert.strictEqual(validateChosenFolder(null), null);
+  });
+
+  test('empty string → null', () => {
+    assert.strictEqual(validateChosenFolder(''), null);
+  });
+
+  test('relative path → null (not absolute)', () => {
+    assert.strictEqual(validateChosenFolder('relative/path'), null);
+  });
+
+  test('non-existent absolute path → null', () => {
+    const ghost = join(realDir, 'does-not-exist-xyz');
+    assert.strictEqual(validateChosenFolder(ghost), null);
+  });
+
+  test('a real existing directory → the normalized absolute path', () => {
+    const result = validateChosenFolder(realDir);
+    assert.ok(result, 'expected a non-null folder for a real directory');
+    // Compare via resolve to be path-separator tolerant
+    assert.strictEqual(result, join(realDir));
+  });
+
+  test('a system directory → null (deny-list rejection)', () => {
+    if (process.platform === 'win32') {
+      assert.strictEqual(validateChosenFolder('C:\\Windows', 'win32'), null);
+      assert.strictEqual(validateChosenFolder('C:\\Program Files', 'win32'), null);
+      // Case-insensitive on win32
+      assert.strictEqual(validateChosenFolder('c:\\windows', 'win32'), null);
+    } else {
+      assert.strictEqual(validateChosenFolder('/etc', 'linux'), null);
+      assert.strictEqual(validateChosenFolder('/', 'linux'), null);
+      assert.strictEqual(validateChosenFolder('/usr', 'linux'), null);
+    }
+  });
+});
+
+describe('handlePickFolder — FOLDER_PICKED frame shape (ONB-04)', () => {
+  let realDir: string;
+
+  test.before(() => {
+    realDir = mkdtempSync(join(tmpdir(), 'sfx-handlepick-test-'));
+  });
+
+  test.after(() => {
+    rmSync(realDir, { recursive: true, force: true });
+  });
+
+  test('valid chosen directory → FOLDER_PICKED with origin echoed + folder set', async () => {
+    const cap = captureFrame();
+    await handlePickFolder('https://example.com', async () => realDir, process.platform, cap.out);
+    const frame = cap.read();
+    assert.ok(frame, 'expected a FOLDER_PICKED frame');
+    assert.strictEqual(frame.type, 'FOLDER_PICKED');
+    assert.strictEqual(frame.origin, 'https://example.com');
+    assert.strictEqual(frame.folder, join(realDir));
+  });
+
+  test('cancelled pick (pickFolder resolves null) → folder:null, origin echoed', async () => {
+    const cap = captureFrame();
+    await handlePickFolder('https://example.com', async () => null, process.platform, cap.out);
+    const frame = cap.read();
+    assert.ok(frame);
+    assert.strictEqual(frame.type, 'FOLDER_PICKED');
+    assert.strictEqual(frame.origin, 'https://example.com');
+    assert.strictEqual(frame.folder, null);
+  });
+
+  test('pick resolves a system directory → folder:null (deny-list)', async () => {
+    const sysDir = process.platform === 'win32' ? 'C:\\Windows' : '/etc';
+    const cap = captureFrame();
+    await handlePickFolder('https://evil.example', async () => sysDir, process.platform, cap.out);
+    const frame = cap.read();
+    assert.ok(frame);
+    assert.strictEqual(frame.type, 'FOLDER_PICKED');
+    assert.strictEqual(frame.origin, 'https://evil.example');
+    assert.strictEqual(frame.folder, null, 'system directory must be rejected to null');
   });
 });
