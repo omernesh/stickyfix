@@ -28,6 +28,8 @@ import {
   createLauncherFiles,
   getLauncherPaths,
   launcherDir,
+  registerNativeHost,
+  nativeWrapperPath,
 } from '../src/bootstrap/register.js';
 import { buildPickerArgs } from '../src/folder-picker.js';
 import { deriveExtensionId, STABLE_EXTENSION_ID, MANIFEST_PUBLIC_KEY } from '../src/extension-id.js';
@@ -570,6 +572,52 @@ describe('enumerateArtifacts — uninstall completeness (ONB-05)', () => {
       m.allowed_origins[0],
       `chrome-extension://${STABLE_EXTENSION_ID}/`,
       'allowed_origins must use STABLE_EXTENSION_ID when no --extension-id is supplied'
+    );
+  });
+});
+
+// ---------------------------------------------------------------------------
+// registerNativeHost — native-messaging launcher wrapper (Windows .cjs fix)
+// ---------------------------------------------------------------------------
+
+describe('registerNativeHost — native wrapper points manifest at launcher', () => {
+  let tmpDir: string;
+  const VALID_ID = 'abcdefghijklmnopabcdefghijklmnop';
+
+  before(() => {
+    tmpDir = mkdtempSync(join(tmpdir(), 'sfx-wrapper-test-'));
+  });
+
+  after(() => {
+    rmSync(tmpDir, { recursive: true, force: true });
+  });
+
+  test('win32: writes wrapper and points manifest path at it', () => {
+    const hostBinPath = join(tmpDir, 'dist', 'host', 'stickyfix-native.cjs');
+    registerNativeHost({
+      extensionId: VALID_ID,
+      hostBinPath,
+      plat: 'win32',
+      home: tmpDir,
+    });
+
+    const wrapperPath = nativeWrapperPath('win32', tmpDir);
+    assert.ok(existsSync(wrapperPath), `Wrapper should exist at ${wrapperPath}`);
+    assert.ok(wrapperPath.endsWith('.bat'), `win32 wrapper should be a .bat: ${wrapperPath}`);
+
+    const wrapperContent = readFileSync(wrapperPath, 'utf8');
+    assert.ok(wrapperContent.includes('node'), 'Wrapper must invoke node');
+    assert.ok(
+      wrapperContent.includes(hostBinPath),
+      `Wrapper must reference the abs cjs path: ${wrapperContent}`
+    );
+
+    const manifestPath = nativeManifestPath('win32', tmpDir);
+    const manifest = JSON.parse(readFileSync(manifestPath, 'utf8')) as { path: string };
+    assert.strictEqual(
+      manifest.path,
+      wrapperPath,
+      `Manifest path must point at the wrapper, got: ${manifest.path}`
     );
   });
 });

@@ -24,6 +24,12 @@ import { isInsideDir } from '../security.js';
 const NATIVE_HOST_NAME = 'com.stickyfix.host';
 const MANIFEST_FILENAME = `${NATIVE_HOST_NAME}.json`;
 
+// Native-messaging launcher wrapper file names. On Windows, Chrome launches the
+// native host via CreateProcess, which cannot execute a .cjs directly — so the
+// manifest must point at a wrapper that runs `node <abs cjs>`.
+const NATIVE_WRAPPER_WIN = `${NATIVE_HOST_NAME}.bat`;
+const NATIVE_WRAPPER_NIX = `${NATIVE_HOST_NAME}.sh`;
+
 // Chrome/Edge registry key prefixes (Windows HKCU — Pitfall 5: never HKLM)
 const REG_CHROME_KEY = `HKCU\\Software\\Google\\Chrome\\NativeMessagingHosts\\${NATIVE_HOST_NAME}`;
 const REG_EDGE_KEY = `HKCU\\Software\\Microsoft\\Edge\\NativeMessagingHosts\\${NATIVE_HOST_NAME}`;
@@ -34,6 +40,7 @@ const CONFIG_PATH = (home: string) => join(CONFIG_DIR(home), 'config.json');
 
 // Launcher file names used across functions
 const LAUNCHER_BATCH_FILENAME = 'stickyfix-host.bat';
+const LAUNCHER_VBS_FILENAME = 'stickyfix-host.vbs';
 const LAUNCHER_LNK_FILENAME = 'Stickyfix Host.lnk';
 const LAUNCHER_COMMAND_FILENAME = 'stickyfix-host.command';
 const LAUNCHER_DESKTOP_FILENAME = 'stickyfix-host.desktop';
@@ -74,6 +81,50 @@ export function nativeManifestPath(
     default:
       throw new Error(`Unsupported platform: ${plat}`);
   }
+}
+
+// ---------------------------------------------------------------------------
+// nativeWrapperPath / writeNativeWrapper — native-messaging launcher wrapper
+// ---------------------------------------------------------------------------
+
+/**
+ * Return the path of the native-messaging launcher wrapper, in the SAME
+ * directory as the manifest. On win32 a .bat, otherwise a .sh.
+ */
+export function nativeWrapperPath(
+  plat: NodeJS.Platform = process.platform,
+  home: string = homedir(),
+): string {
+  const dir = dirname(nativeManifestPath(plat, home));
+  return join(dir, plat === 'win32' ? NATIVE_WRAPPER_WIN : NATIVE_WRAPPER_NIX);
+}
+
+/**
+ * Write the per-OS launcher wrapper that runs `node <abs cjs>`, returning its
+ * path. Chrome's CreateProcess (Windows) cannot execute a .cjs directly; the
+ * manifest must point at this wrapper instead of the raw .cjs.
+ *
+ * Security: `abs` is a developer-controlled absolute path (no user input);
+ * this is a file write, not exec — no injection vector.
+ */
+export function writeNativeWrapper(
+  hostBinPath: string,
+  plat: NodeJS.Platform = process.platform,
+  home: string = homedir(),
+): string {
+  const wrapperPath = nativeWrapperPath(plat, home);
+  mkdirSync(dirname(wrapperPath), { recursive: true });
+  const abs = resolve(hostBinPath);
+
+  if (plat === 'win32') {
+    const content = `@echo off\r\n"node" "${abs}" %*\r\n`;
+    writeFileSync(wrapperPath, content, { encoding: 'utf8' });
+  } else {
+    const content = `#!/bin/sh\nexec node "${abs}" "$@"\n`;
+    writeFileSync(wrapperPath, content, { encoding: 'utf8', mode: 0o755 });
+  }
+
+  return wrapperPath;
 }
 
 // ---------------------------------------------------------------------------
@@ -267,7 +318,41 @@ export function createLauncherFiles(opts: LauncherOptions): LauncherResult {
     writeFileSync(batchPath, batchContent, { encoding: 'utf8' });
     written.push(batchPath);
 
-    // Create Desktop shortcut (.lnk) via PowerShell WScript.Shell
+    // Write a VBScript that launches the host HIDDEN (no console window) and
+    // shows an auto-dismissing native Windows dialog confirming it's running.
+    // VBS string-literal escaping: a literal " is doubled ("").
+    const vq = (s: string) => s.replace(/"/g, '""');
+    const vbsHostEntry = vq(hostEntry);
+    const vbsRoot = vq(rootArg);
+    const vbsPortArg = opts.port !== undefined ? ` --port ${opts.port}` : '';
+    const vbsContent = [
+      'Option Explicit',
+      'Dim sh, fso, hostEntry, root, portFile, msg, port, f',
+      'Set sh = CreateObject("WScript.Shell")',
+      'Set fso = CreateObject("Scripting.FileSystemObject")',
+      `hostEntry = "${vbsHostEntry}"`,
+      `root = "${vbsRoot}"`,
+      "' Launch the host hidden (window style 0), do not wait",
+      `sh.Run "cmd /c node """ & hostEntry & """ --root """ & root & """${vbsPortArg}", 0, False`,
+      "' Give it a moment to bind and write the port file",
+      'WScript.Sleep 1800',
+      'msg = "Stickyfix host is running." & vbCrLf & vbCrLf & "You can start dropping notes."',
+      'portFile = root & "\\.stickyfix-port"',
+      'If fso.FileExists(portFile) Then',
+      '  Set f = fso.OpenTextFile(portFile, 1)',
+      '  port = Trim(f.ReadAll)',
+      '  f.Close',
+      '  If Len(port) > 0 Then msg = "Stickyfix host is running on port " & port & "." & vbCrLf & vbCrLf & "You can start dropping notes."',
+      'End If',
+      'sh.Popup msg, 5, "Stickyfix", 64',
+    ].join('\r\n');
+
+    const vbsPath = join(launcherDir(plat, home), LAUNCHER_VBS_FILENAME);
+    writeFileSync(vbsPath, vbsContent, { encoding: 'utf8' });
+    written.push(vbsPath);
+
+    // Create Desktop shortcut (.lnk) via PowerShell WScript.Shell.
+    // The shortcut launches the VBS via wscript.exe so the console stays HIDDEN.
     // Security: ALL paths are developer-controlled absolute strings — no user input.
     // execFile (not exec) — no shell spawned, no injection vector.
     // If this fails for any reason, fall through to the warning (batch file is the fallback).
@@ -279,14 +364,17 @@ export function createLauncherFiles(opts: LauncherOptions): LauncherResult {
       // set from the -Command string. No shell metacharacter interpolation from
       // external data; all values are constants determined at registration time.
       // PowerShell single-quote escaping: replace ' with '' in path strings.
-      const safeBatchPath = batchPath.replace(/'/g, "''");
       const safeLnkPath = lnkPath.replace(/'/g, "''");
       const safeIconPath = iconPath.replace(/'/g, "''");
+      const wscriptPath = join(process.env['SystemRoot'] ?? 'C:\\Windows', 'System32', 'wscript.exe');
+      const safeWscript = wscriptPath.replace(/'/g, "''");
+      const safeVbsPath = vbsPath.replace(/'/g, "''");
 
       const psScript =
         `$ws = New-Object -ComObject WScript.Shell;` +
         `$s = $ws.CreateShortcut('${safeLnkPath}');` +
-        `$s.TargetPath = '${safeBatchPath}';` +
+        `$s.TargetPath = '${safeWscript}';` +
+        `$s.Arguments = '"${safeVbsPath}"';` +
         `$s.Description = 'Start the Stickyfix HTTP backend host';` +
         (safeIconPath ? `$s.IconLocation = '${safeIconPath},0';` : '') +
         `$s.Save()`;
@@ -391,7 +479,10 @@ export function registerNativeHost(opts: RegisterOptions): void {
   const home = opts.home ?? homedir();
 
   const manifestPath = nativeManifestPath(plat, home);
-  const manifest = buildManifest(opts.extensionId, opts.hostBinPath);
+  // Chrome's CreateProcess cannot run a .cjs directly — point the manifest at a
+  // per-OS wrapper that runs `node <abs cjs>` instead of the raw bin path.
+  const wrapperPath = writeNativeWrapper(opts.hostBinPath, plat, home);
+  const manifest = buildManifest(opts.extensionId, wrapperPath);
   writeManifest(manifest, manifestPath);
 
   if (plat === 'win32') {
@@ -428,6 +519,7 @@ export function unregisterNativeHost(opts: UnregisterOptions = {}): void {
   const manifestPath = opts.manifestPath ?? nativeManifestPath(plat, home);
 
   rmSync(manifestPath, { force: true });
+  rmSync(nativeWrapperPath(plat, home), { force: true });
 
   // Remove launcher files
   const defaultPaths = getLauncherPaths(plat, home);
@@ -444,6 +536,11 @@ export function unregisterNativeHost(opts: UnregisterOptions = {}): void {
   rmSync(lPaths.launcher, { force: true });
   if (lPaths.shortcut) rmSync(lPaths.shortcut, { force: true });
   if (lPaths.desktopEntry) rmSync(lPaths.desktopEntry, { force: true });
+
+  // Remove the hidden-launch VBS (win32 only — written by createLauncherFiles)
+  if (plat === 'win32') {
+    rmSync(join(launcherDir(plat, home), LAUNCHER_VBS_FILENAME), { force: true });
+  }
 
   if (plat === 'win32') {
     // /f flag suppresses "are you sure?" prompt; tolerates absent key (non-zero exit ignored)
@@ -498,6 +595,7 @@ export function enumerateArtifacts(opts: ArtifactOptions = {}): ArtifactList {
 
   const paths: string[] = [
     nativeManifestPath(plat, home),
+    nativeWrapperPath(plat, home),
     CONFIG_PATH(home),
   ];
 
@@ -514,6 +612,9 @@ export function enumerateArtifacts(opts: ArtifactOptions = {}): ArtifactList {
   paths.push(lPaths.launcher);
   if (lPaths.shortcut) paths.push(lPaths.shortcut);
   if (lPaths.desktopEntry) paths.push(lPaths.desktopEntry);
+  if (plat === 'win32') {
+    paths.push(join(launcherDir(plat, home), LAUNCHER_VBS_FILENAME));
+  }
 
   const registryKeys: string[] = plat === 'win32' ? [REG_CHROME_KEY, REG_EDGE_KEY] : [];
 
