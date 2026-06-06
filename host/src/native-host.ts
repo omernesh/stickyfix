@@ -15,11 +15,16 @@
  * Node builtins only — no WXT, no Chrome imports.
  */
 
-import { readFileSync, existsSync, statSync } from 'node:fs';
-import { join, isAbsolute, resolve } from 'node:path';
+import { readFileSync } from 'node:fs';
+import { join } from 'node:path';
 import { homedir } from 'node:os';
 import { sendNativeMessage, readNativeMessages } from './native-msg.js';
 import { pickFolder } from './folder-picker.js';
+import { validateChosenFolder } from './validate-folder.js';
+
+// Re-export so existing importers (native-host.test.ts) keep working unchanged
+// after the validation logic moved to validate-folder.ts (single source of truth).
+export { validateChosenFolder };
 
 // ---------------------------------------------------------------------------
 // Config + token/port resolution
@@ -34,66 +39,8 @@ interface StickyFixConfig {
 }
 
 // ---------------------------------------------------------------------------
-// Folder-picker result validation (T-09-14)
-// ---------------------------------------------------------------------------
-
-/**
- * Sensitive system directories that must NEVER become a note-write root.
- * Compared against a resolved, normalized chosen path (case-insensitive on
- * win32). If the chosen folder equals one of these roots, the pick is rejected.
- */
-const SYSTEM_DIRS_NIX = ['/', '/System', '/usr', '/etc'];
-const SYSTEM_DIRS_WIN = ['C:\\Windows', 'C:\\Program Files'];
-
-/**
- * Validate a folder-picker result before it becomes a note root (T-09-14).
- *
- * IMPORTANT — why isInsideDir does NOT apply here:
- * The chosen folder is a *brand-new* note root selected by the user, NOT a
- * child of any pre-existing root. The `isInsideDir(root, target)` confinement
- * guard asserts that `target` lives inside an already-established `root`; there
- * is no such pre-existing root at folder-pick time. Do not "fix" this by adding
- * an isInsideDir call against the wrong base — that would reject every valid
- * pick. Instead we validate the path defensively on its own terms:
- *   (1) absolute, (2) exists, (3) is a directory, (4) not a sensitive system dir.
- *
- * @returns the validated absolute directory, or null if any check fails.
- */
-export function validateChosenFolder(
-  folder: string | null,
-  plat: NodeJS.Platform = process.platform,
-): string | null {
-  // User cancelled / dialog unavailable — no folder chosen.
-  if (folder === null || typeof folder !== 'string' || folder.length === 0) {
-    return null;
-  }
-
-  // (1) Must be absolute.
-  if (!isAbsolute(folder)) return null;
-
-  // (2) Must exist + (3) must be a directory.
-  try {
-    if (!existsSync(folder)) return null;
-    if (!statSync(folder).isDirectory()) return null;
-  } catch {
-    return null;
-  }
-
-  // (4) Reject sensitive system directories. Normalize via resolve() and, on
-  // win32, compare case-insensitively (the filesystem is case-insensitive).
-  const normalized = resolve(folder);
-  const denyList = plat === 'win32' ? SYSTEM_DIRS_WIN : SYSTEM_DIRS_NIX;
-  const cmp = plat === 'win32' ? normalized.toLowerCase() : normalized;
-  for (const sysDir of denyList) {
-    const sysCmp = plat === 'win32' ? resolve(sysDir).toLowerCase() : resolve(sysDir);
-    if (cmp === sysCmp) return null;
-  }
-
-  return normalized;
-}
-
-// ---------------------------------------------------------------------------
 // PICK_FOLDER handler — open the OS dialog, validate, respond, exit (Pitfall 8)
+// Folder validation lives in validate-folder.ts (shared with the HTTP server).
 // ---------------------------------------------------------------------------
 
 /**
