@@ -1,11 +1,45 @@
 {
   "name": "stickyfix",
-  "version": "0.1.0",
+  "version": "1.0.0",
   "description": "Pin sticky notes on any page — your AI reads them.",
-  "private": true,
+  "license": "MIT",
+  "author": "Omer Nesher <omernesher@gmail.com>",
+  "homepage": "https://github.com/omernesh/stickyfix#readme",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/omernesh/stickyfix.git"
+  },
+  "bugs": {
+    "url": "https://github.com/omernesh/stickyfix/issues"
+  },
+  "keywords": [
+    "chrome-extension",
+    "sticky-notes",
+    "annotations",
+    "code-review",
+    "ai",
+    "ai-agent",
+    "mv3",
+    "native-messaging",
+    "markdown"
+  ],
   "type": "module",
+  "engines": {
+    "node": ">=20"
+  },
   "bin": {
     "stickyfix": "dist/host/stickyfix-init.cjs"
+  },
+  "files": [
+    "dist/host/src",
+    "dist/host/stickyfix-init.cjs",
+    "dist/host/stickyfix-native.cjs",
+    "public/icon",
+    "README.md",
+    "LICENSE"
+  ],
+  "publishConfig": {
+    "access": "public"
   },
   "scripts": {
     "dev": "wxt",
@@ -15,17 +49,17 @@
     "test:lib": "tsc -p tsconfig.lib.json && node --test \"dist/lib/lib/test/**/*.test.js\"",
     "test": "tsc -p tsconfig.host.json && node --test \"dist/host/test/**/*.test.js\"",
     "check": "tsc --noEmit && tsc --noEmit -p tsconfig.host.json && node scripts/clean-room-check.mjs && node scripts/host-smoke-test.mjs && npm run test:lib && npm test",
-    "postinstall": "wxt prepare"
+    "postinstall": "node -e \"try{require.resolve('wxt')}catch(e){process.exit(0)}\" && wxt prepare"
   },
   "devDependencies": {
+    "@medv/finder": "4.0.2",
     "@types/chrome": "0.1.42",
     "@types/node": "25.9.1",
+    "interactjs": "1.10.27",
     "typescript": "6.0.3",
     "wxt": "0.20.26"
   },
   "dependencies": {
-    "@medv/finder": "4.0.2",
-    "interactjs": "1.10.27",
     "yaml": "2.9.0"
   }
 }

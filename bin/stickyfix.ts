@@ -90,15 +90,23 @@ if (subcommand === 'init') {
   // __dirname here is dist/host/ (esbuild CJS output directory)
   const hostEntryPath = resolve(join(__dirname, 'src', 'index.js'));
 
-  // Find the icon (128px) — try common output paths
-  // wxt build outputs icons to .output/chrome-mv3/icon/128.png relative to project root.
-  // We resolve relative to the dist/host dir by going up two levels to find project root.
+  // Find the launcher icon — resolve relative to the dist/host dir (go up two
+  // levels to the project / installed-package root). On Windows a .lnk
+  // IconLocation needs a real .ico (a .png renders unreliably as a shortcut
+  // icon), so prefer the multi-size stickyfix.ico there; elsewhere the .desktop
+  // Icon= takes the 128px PNG.
   const projectRoot = resolve(join(__dirname, '..', '..'));
-  const iconCandidates = [
+  const icoCandidates = [
+    join(projectRoot, 'public', 'icon', 'stickyfix.ico'),
+    join(projectRoot, '.output', 'chrome-mv3', 'icon', 'stickyfix.ico'),
+  ];
+  const pngCandidates = [
     join(projectRoot, '.output', 'chrome-mv3', 'icon', '128.png'),
     join(projectRoot, 'public', 'icon', '128.png'),
     join(projectRoot, 'assets', 'icon', '128.png'),
   ];
+  const iconCandidates =
+    process.platform === 'win32' ? [...icoCandidates, ...pngCandidates] : pngCandidates;
   const iconPath = iconCandidates.find((p) => existsSync(p));
 
   const launcherResult = createLauncherFiles({
