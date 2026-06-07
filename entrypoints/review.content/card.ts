@@ -55,7 +55,7 @@ type AnnotationResponse = AnnotationOkResponse | AnnotationErrResponse;
 /** SW response for SFX_PICK_FOLDER (background.handlePickFolder) — mirrors chip.ts. */
 type PickFolderResponse =
   | { ok: true; folder: string }
-  | { ok: false; error: string };
+  | { ok: false; error: string; cancelled?: boolean };
 
 /** Per-card thumbnail entry (CAM-05) */
 interface ThumbnailEntry {
@@ -494,9 +494,14 @@ function _doSend(
                     // Brief confirmation, then auto-retry the SAME payload ONCE.
                     showToastFn(`Saving notes to ${pick.folder}`, false);
                     sendOnce(false);
-                  } else {
+                  } else if (pick.cancelled) {
+                    // User dismissed the dialog — retrying the pick is the fix.
                     restoreControls();
                     showToastFn('No folder chosen — note not saved. Drop again to pick one.', true);
+                  } else {
+                    // Real host/native error — surface it (host not running, etc.).
+                    restoreControls();
+                    showToastFn(pick.error || 'Folder picker failed — note not saved.', true);
                   }
                 }
               );
@@ -1000,10 +1005,16 @@ function _doElementSend(
                       // (no re-capture).
                       showToastFn(`Saving notes to ${pick.folder}`, false);
                       sendAssembled(false);
-                    } else {
+                    } else if (pick.cancelled) {
+                      // User dismissed the dialog — retrying the pick is the fix.
                       restoreControls();
                       sendBtn.disabled = textarea.value.trim().length === 0;
                       showToastFn('No folder chosen — note not saved. Drop again to pick one.', true);
+                    } else {
+                      // Real host/native error — surface it (host not running, etc.).
+                      restoreControls();
+                      sendBtn.disabled = textarea.value.trim().length === 0;
+                      showToastFn(pick.error || 'Folder picker failed — note not saved.', true);
                     }
                   }
                 );

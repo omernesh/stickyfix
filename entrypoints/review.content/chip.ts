@@ -60,7 +60,7 @@ type AnnotationResponse = AnnotationOkResponse | AnnotationErrResponse;
 /** SW response for SFX_PICK_FOLDER (background.handlePickFolder). */
 type PickFolderResponse =
   | { ok: true; folder: string }
-  | { ok: false; error: string };
+  | { ok: false; error: string; cancelled?: boolean };
 
 interface SetRouteOkResponse {
   ok: true;
@@ -570,10 +570,14 @@ function wireSendButton(
                     // Brief confirmation, then auto-retry the SAME payload ONCE.
                     showFeedbackFn(feedback, `Saving notes to ${pick.folder}`, false);
                     sendOnce(payload, false);
-                  } else {
+                  } else if (pick.cancelled) {
                     // User cancelled / invalid pick — visible toast, no silent drop (REL-01).
                     sendBtn.disabled = false;
                     showFeedbackFn(feedback, 'No folder chosen — note not saved. Drop again to pick one.', true);
+                  } else {
+                    // Real host/native error — surface it (host not running, etc.) (REL-01).
+                    sendBtn.disabled = false;
+                    showFeedbackFn(feedback, pick.error || 'Folder picker failed — note not saved.', true);
                   }
                 }
               );

@@ -431,19 +431,48 @@ async function handleSendAnnotation(
   //    For folder-mapped origins, targetDir rides in the POST body; the host
   //    re-validates it and confines the write to <targetDir>/notes (D-04).
   const sendBody = targetDir !== undefined ? { ...payload, targetDir } : payload;
-  let resp: Response;
-  try {
-    resp = await fetch(`http://127.0.0.1:${host.port}/annotation`, {
+  const requestBody = JSON.stringify(sendBody);
+
+  // POST the SAME body with a given token. Factored out so we can retry once
+  // with a fresh token after auto re-pairing on a 401 (token rotation recovery).
+  const doPost = (token: string): Promise<Response> =>
+    fetch(`http://127.0.0.1:${host.port}/annotation`, {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',
-        'X-Stickyfix-Token': host.token,
+        'X-Stickyfix-Token': token,
       },
-      body: JSON.stringify(sendBody),
+      body: requestBody,
     });
+
+  let resp: Response;
+  try {
+    resp = await doPost(host.token);
   } catch (e: unknown) {
     // Host down or network error — never throw to content script (REL-01)
     return { ok: false, error: `Host unreachable: ${String(e)}` };
+  }
+
+  // 4b. Token-rotation recovery: a restarted host mints a NEW token, so the
+  //     cached token in sfxTokens is stale and /annotation returns 401. Try ONE
+  //     automatic re-pair (GET_TOKEN via handlePairNative refreshes sfxTokens +
+  //     sfxRegistry), then retry the SAME body once with the fresh token. Bounded
+  //     to a single retry — a persistent 401 falls through to the error mapping
+  //     below so the user still sees "unauthorized".
+  if (resp.status === 401) {
+    const repaired = await handlePairNative();
+    if (repaired.ok) {
+      const freshTokens = await sfxTokens.getValue();
+      const freshToken = freshTokens[host.name];
+      if (freshToken) {
+        try {
+          resp = await doPost(freshToken);
+        } catch (e: unknown) {
+          // Host went down between re-pair and retry — never throw (REL-01)
+          return { ok: false, error: `Host unreachable: ${String(e)}` };
+        }
+      }
+    }
   }
 
   // 5. Map host response → SfxResponse (200 / 401 / 400 / 413)
@@ -814,7 +843,7 @@ async function handlePairNative(): Promise<{ ok: true; name: string } | { ok: fa
  */
 async function handlePickFolder(
   tabId: number
-): Promise<{ ok: true; folder: string } | { ok: false; error: string }> {
+): Promise<{ ok: true; folder: string } | { ok: false; error: string; cancelled?: boolean }> {
   // Derive origin from the tab URL — page cannot spoof this (T-09-15 / T-03-01)
   const tab = await chrome.tabs.get(tabId);
   if (!tab.url) {
@@ -833,14 +862,34 @@ async function handlePickFolder(
       // handlePairNative which correctly sends the literal 'GET_TOKEN'.
       { type: 'PICK_FOLDER', origin },
       async (response: unknown) => {
+        // CASE 1: native messaging itself failed → the native host is not
+        // installed/reachable. This is NOT a user cancel — tell them to install
+        // the host, not to retry the (never-opened) dialog. No `cancelled` flag.
         if (chrome.runtime.lastError) {
-          resolve({ ok: false, error: chrome.runtime.lastError.message ?? 'native messaging error' });
+          resolve({ ok: false, error: 'stickyfix host not found — run: npx stickyfix init' });
           return;
         }
 
-        const r = response as { type?: string; origin?: string; folder?: string | null } | null;
+        const r = response as {
+          type?: string;
+          origin?: string;
+          folder?: string | null;
+          error?: string;
+        } | null;
+
+        // CASE 2: host returned a structured ERROR frame → host not running /
+        // token or config missing. Surface the real host error, not a cancel
+        // message. No `cancelled` flag — retrying the dialog won't fix it.
+        if (r && r.type === 'ERROR') {
+          resolve({ ok: false, error: r.error ?? 'stickyfix host error' });
+          return;
+        }
+
+        // CASE 3: not a valid FOLDER_PICKED frame, or empty/null folder → the
+        // user dismissed the dialog (or the pick was invalid). This IS a cancel,
+        // so flag it (`cancelled: true`) — UI shows "drop again to pick one".
         if (!r || r.type !== 'FOLDER_PICKED' || typeof r.folder !== 'string' || r.folder.length === 0) {
-          resolve({ ok: false, error: 'No folder selected' });
+          resolve({ ok: false, error: 'No folder selected', cancelled: true });
           return;
         }
 

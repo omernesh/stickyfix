@@ -79,8 +79,9 @@ export async function handlePickFolder(
 // ---------------------------------------------------------------------------
 
 /**
- * Native-host entry point. Reads config/token/port from disk, then dispatches
- * the single inbound native message and exits.
+ * Native-host entry point. Reads config from disk (required), then dispatches
+ * the single inbound native message and exits. The token/port are read LAZILY
+ * inside the GET_TOKEN branch only — PICK_FOLDER does not need them.
  *
  * Kept as a function (not top-level side effects) so the pure helpers above
  * (validateChosenFolder / handlePickFolder) can be imported by unit tests
@@ -97,30 +98,35 @@ export function main(): void {
     process.exit(1);
   }
 
-  let token: string;
-  try {
-    token = readFileSync(join(cfg.root, '.stickyfix-token'), 'utf8').trim();
-  } catch {
-    sendNativeMessage({ type: 'ERROR', error: '.stickyfix-token not found. Start the host first.' });
-    process.exit(1);
-  }
-
-  // Port is optional — read if present; SW falls back to port scan (A5 fallback)
-  let port: number | undefined;
-  try {
-    const raw = readFileSync(join(cfg.root, '.stickyfix-port'), 'utf8').trim();
-    const parsed = parseInt(raw, 10);
-    if (!isNaN(parsed)) {
-      port = parsed;
-    }
-  } catch {
-    // .stickyfix-port absent is OK — SW re-probes (A5)
-  }
-
+  // NOTE: the token (and optional port) are read LAZILY inside the GET_TOKEN
+  // branch below — NOT upfront. PICK_FOLDER does not need the token, so reading
+  // it here would wrongly fail the folder dialog whenever .stickyfix-token is
+  // absent (e.g. host never started). Config is the only upfront requirement.
   readNativeMessages((msg) => {
     const m = msg as { type?: string; origin?: string };
 
     if (m.type === 'GET_TOKEN') {
+      // Token is required ONLY for GET_TOKEN — read it lazily here.
+      let token: string;
+      try {
+        token = readFileSync(join(cfg.root, '.stickyfix-token'), 'utf8').trim();
+      } catch {
+        sendNativeMessage({ type: 'ERROR', error: '.stickyfix-token not found. Start the host first.' });
+        process.exit(1);
+      }
+
+      // Port is optional — read if present; SW falls back to port scan (A5 fallback)
+      let port: number | undefined;
+      try {
+        const raw = readFileSync(join(cfg.root, '.stickyfix-port'), 'utf8').trim();
+        const parsed = parseInt(raw, 10);
+        if (!isNaN(parsed)) {
+          port = parsed;
+        }
+      } catch {
+        // .stickyfix-port absent is OK — SW re-probes (A5)
+      }
+
       // Send token + port (if known) + host identity, then exit (one-shot)
       sendNativeMessage({
         type: 'TOKEN',
@@ -134,7 +140,9 @@ export function main(): void {
 
     if (m.type === 'PICK_FOLDER') {
       // PICK_FOLDER is a SEPARATE spawn from GET_TOKEN (Pitfall 8) — the dialog
-      // never blocks a token fetch. Open the dialog, validate, respond, exit.
+      // never blocks a token fetch. It does NOT require the token (read lazily
+      // for GET_TOKEN only), so it works even before the host has ever started.
+      // Open the dialog, validate, respond, exit.
       handlePickFolder(m.origin).then(
         () => process.exit(0),
         () => process.exit(0),
