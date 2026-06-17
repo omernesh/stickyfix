@@ -19,6 +19,7 @@ import { SFX_MSG } from '../../lib/types.js';
 import { captureElementContext } from '../../lib/element-context.js';
 import { exitPickMode } from './picker.js';
 import { mountPins, teardownPins } from './pin.js';
+import { mountPanel, togglePanel, teardownPanel, refreshPanel } from './panel.js';
 
 export default defineContentScript({
   matches: ['<all_urls>'],
@@ -93,6 +94,8 @@ export default defineContentScript({
               // Refresh the chip: a card Send may have just established a folder
               // mapping → swap the chip from dropdown/needs-folder to routed label.
               refreshChipRoute(container);
+              // Phase C: sync notes panel after Send
+              refreshPanel();
             },
             // onDiscard: re-arm pick mode only (nothing was written → no pin re-fetch).
             // Fires on Discard/Esc; never on Send success (onSent owns that path) so
@@ -101,7 +104,7 @@ export default defineContentScript({
               reArm();
             }
           );
-        });
+        }, () => togglePanel());
 
         // Resolve tabId once from chip's canonical getTabId (not duplicated here)
         // and mount the FAB. openCard/closeCard share the same container.
@@ -135,6 +138,8 @@ export default defineContentScript({
                   // Refresh the chip: a card Send may have just established a folder
                   // mapping → swap the chip from dropdown/needs-folder to routed label.
                   refreshChipRoute(container);
+                  // Phase C: sync notes panel after Send
+                  refreshPanel();
                 }
               );
             });
@@ -143,6 +148,9 @@ export default defineContentScript({
             mountPins(container, tabId, toast).catch(
               (err: unknown) => toast(`Could not load pins — ${String(err)}`, true)
             );
+
+            // Phase C: mount notes panel (hidden by default; tabId now resolved)
+            mountPanel(container, tabId, toast);
 
             // SPA navigation re-scope: pins + chip route are URL-scoped, but an
             // in-page nav does not reload the document, so without this the prior
@@ -190,6 +198,8 @@ export default defineContentScript({
           exitPickMode();
           // Phase 6: tear down pins + remove scroll/resize listeners (T-06-09)
           teardownPins();
+          // Phase C: tear down notes panel
+          teardownPanel();
         }
       },
     }).catch((err: unknown) => {

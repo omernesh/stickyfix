@@ -104,7 +104,8 @@ const refreshMap = new WeakMap<HTMLElement, () => void>();
 export function mountChip(
   container: HTMLElement,
   unmountFn: () => void,
-  onPickerClick?: (el: Element, reArm: () => void) => void
+  onPickerClick?: (el: Element, reArm: () => void) => void,
+  onTogglePanel?: () => void
 ): void {
   // WR-03: feedbackTimer scoped per-instance (not module-level) so re-injection
   // cannot cancel a detached chip's auto-dismiss timer.
@@ -166,6 +167,17 @@ export function mountChip(
   pickerBtn.setAttribute('aria-label', 'Pick element');
   pickerBtn.setAttribute('aria-pressed', 'false');
   chip.appendChild(pickerBtn);
+
+  // Notes panel toggle button (Phase C)
+  const panelBtn = document.createElement('button');
+  panelBtn.className = 'sfx-chip-btn sfx-panel-btn';
+  panelBtn.textContent = '📋';
+  panelBtn.setAttribute('aria-label', 'Toggle notes panel');
+  panelBtn.setAttribute('aria-pressed', 'false');
+  panelBtn.addEventListener('click', () => {
+    onTogglePanel?.();
+  });
+  chip.appendChild(panelBtn);
 
   // Track picker active state
   let pickerActive = false;

@@ -1,0 +1,256 @@
+/* stickyfix Notes Panel — Phase C (Review Loop v2) */
+
+.sfx-panel {
+  position: fixed;
+  top: 56px;
+  right: 16px;
+  width: 320px;
+  max-height: 60vh;
+  overflow: hidden;
+  display: flex;
+  flex-direction: column;
+  z-index: 5;
+  background: #ffffff;
+  border: 1px solid #cccccc;
+  border-radius: 6px;
+  box-shadow: 0 4px 16px rgba(0, 0, 0, 0.18);
+  pointer-events: auto;
+  font-family: system-ui, -apple-system, sans-serif;
+  font-size: 13px;
+  color: #111111;
+}
+
+.sfx-panel-header {
+  padding: 12px 12px 8px;
+  border-bottom: 1px solid #eeeeee;
+  background: #f9f9f9;
+  border-radius: 6px 6px 0 0;
+  flex-shrink: 0;
+}
+
+.sfx-panel-title-row {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin-bottom: 8px;
+}
+
+.sfx-panel-title {
+  font-weight: 600;
+  font-size: 14px;
+  color: #111111;
+  flex: 1;
+}
+
+.sfx-panel-count {
+  font-size: 11px;
+  background: #e5e7eb;
+  color: #444444;
+  border-radius: 10px;
+  padding: 1px 7px;
+  font-weight: 500;
+}
+
+.sfx-panel-close {
+  margin-left: auto;
+  background: transparent;
+  border: none;
+  font-size: 18px;
+  font-weight: bold;
+  color: #666666;
+  cursor: pointer;
+  padding: 0;
+  line-height: 1;
+  width: 20px;
+  height: 20px;
+}
+
+.sfx-panel-close:hover {
+  color: #111111;
+}
+
+.sfx-panel-scope-row {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  margin-bottom: 8px;
+}
+
+.sfx-panel-scope-checkbox {
+  cursor: pointer;
+  width: 14px;
+  height: 14px;
+  accent-color: #1d6ed8;
+}
+
+.sfx-panel-scope-lbl {
+  font-size: 12px;
+  color: #444444;
+  cursor: pointer;
+  user-select: none;
+}
+
+.sfx-panel-filter-row {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 4px;
+  margin-bottom: 8px;
+}
+
+.sfx-panel-filter-btn {
+  font-size: 11px;
+  padding: 3px 8px;
+  border: 1px solid #cccccc;
+  border-radius: 12px;
+  background: #f0f0f0;
+  color: #444444;
+  cursor: pointer;
+  white-space: nowrap;
+}
+
+.sfx-panel-filter-btn:hover {
+  background: #e0e0e0;
+}
+
+.sfx-panel-filter-btn.sfx-panel-filter-active {
+  background: #1d6ed8;
+  color: #ffffff;
+  border-color: #1d6ed8;
+}
+
+.sfx-panel-search-wrap {
+  position: relative;
+  margin-bottom: 0;
+}
+
+.sfx-panel-search {
+  width: 100%;
+  box-sizing: border-box;
+  font-size: 12px;
+  padding: 5px 8px;
+  border: 1px solid #cccccc;
+  border-radius: 4px;
+  background: #ffffff;
+  color: #111111;
+  font-family: system-ui, -apple-system, sans-serif;
+}
+
+.sfx-panel-search:focus {
+  outline: 2px solid #1d6ed8;
+  outline-offset: 1px;
+}
+
+.sfx-panel-list {
+  flex: 1;
+  overflow-y: auto;
+  min-height: 0;
+  padding: 4px 0;
+}
+
+.sfx-panel-row {
+  display: flex;
+  align-items: flex-start;
+  gap: 8px;
+  padding: 8px 12px;
+  cursor: pointer;
+  border-bottom: 1px solid #f0f0f0;
+  user-select: none;
+}
+
+.sfx-panel-row:last-child {
+  border-bottom: none;
+}
+
+.sfx-panel-row:hover {
+  background: #f5f5f5;
+}
+
+.sfx-panel-row:focus {
+  outline: 2px solid #1d6ed8;
+  outline-offset: -2px;
+  background: #f5f5f5;
+}
+
+.sfx-panel-dot {
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  flex-shrink: 0;
+  margin-top: 4px;
+}
+
+.sfx-panel-dot-unread {
+  background: #dc2626;
+}
+
+.sfx-panel-dot-flagged {
+  background: #ea580c;
+}
+
+.sfx-panel-dot-resolved {
+  background: #16a34a;
+}
+
+.sfx-panel-dot-read {
+  background: #9ca3af;
+}
+
+.sfx-panel-row-body {
+  flex: 1;
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+
+.sfx-panel-row-top {
+  display: flex;
+  align-items: baseline;
+  gap: 5px;
+  min-width: 0;
+}
+
+.sfx-panel-serial {
+  font-size: 11px;
+  color: #9ca3af;
+  flex-shrink: 0;
+  font-variant-numeric: tabular-nums;
+}
+
+.sfx-panel-mode {
+  font-size: 12px;
+  flex-shrink: 0;
+}
+
+.sfx-panel-text {
+  font-size: 13px;
+  color: #111111;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  flex: 1;
+  min-width: 0;
+}
+
+.sfx-panel-reply {
+  font-size: 11px;
+  color: #444444;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.sfx-panel-path {
+  font-size: 11px;
+  color: #9ca3af;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.sfx-panel-empty {
+  padding: 24px 12px;
+  text-align: center;
+  color: #9ca3af;
+  font-size: 13px;
+}

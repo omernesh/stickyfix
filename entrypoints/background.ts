@@ -531,7 +531,8 @@ interface PinDescriptor {
 }
 
 async function handleListAnnotations(
-  tabId: number
+  tabId: number,
+  scope?: 'all'
 ): Promise<{ ok: true; pins: PinDescriptor[] } | { ok: false; error: string }> {
   // 1. Re-read storage (MV3 SW may have been recycled — Pitfall 1)
   const state = await loadStorageState();
@@ -566,7 +567,7 @@ async function handleListAnnotations(
     resp = await relayFetchWithRepair(
       host,
       withTargetDir(
-        `http://127.0.0.1:${host.port}/annotations?url=${encodeURIComponent(tab.url)}`,
+        `http://127.0.0.1:${host.port}/annotations?url=${encodeURIComponent(tab.url)}${scope === 'all' ? '&scope=all' : ''}`,
         targetDir
       ),
       { method: 'GET' },
@@ -1165,7 +1166,7 @@ chrome.runtime.onMessage.addListener(
           sendResponse({ ok: false, error: 'forbidden' });
           return true;
         }
-        handleListAnnotations(listMsg.tabId)
+        handleListAnnotations(listMsg.tabId, listMsg.scope)
           .then(sendResponse)
           .catch((err: unknown) =>
             sendResponse({ ok: false, error: String(err) })

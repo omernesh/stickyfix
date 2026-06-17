@@ -105,6 +105,8 @@ export const SFX_GET_SCREENSHOT    = 'SFX_GET_SCREENSHOT'    as const;
 export interface MsgListAnnotations {
   type: typeof SFX_LIST_ANNOTATIONS;
   tabId: number;
+  /** 'all' = skip URL filtering, return notes for ALL pages in the mapped folder */
+  scope?: 'all';
   // pageUrl derived from chrome.tabs.get(tabId) in SW — NEVER from message body (anti-spoof)
 }
 
