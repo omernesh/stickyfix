@@ -32,6 +32,10 @@ export interface PinDescriptor {
   /** Populated from fm['note_position'] — the CANONICAL key (D-03) */
   viewportCoords?: { x: number; y: number };
   screenshots: string[];
+  /** AI reply written by the review-notes skill — from fm['reply'] */
+  reply?: string;
+  /** Commit hash / PR ref the fix landed in — from fm['fixed_in'] (snake_case) */
+  fixedIn?: string;
 }
 
 // ---------------------------------------------------------------------------
@@ -63,13 +67,24 @@ export function resolveSerialFile(notesDir: string, serial: string): string | nu
  * Read all *.md files in notesDir, parse their YAML frontmatter, and return a
  * PinDescriptor for each note whose `url` pathname matches `pageUrl` (D-02).
  *
+ * When `opts.allUrls` is true the per-note URL-path match is skipped, so notes
+ * from ALL pages are returned (project-wide listing). A note still needs a
+ * string `url` field to be included. The read/.read.md exclusion and the
+ * `status === 'read'` skip apply identically in both modes — read notes are
+ * never returned regardless of `allUrls`.
+ *
  * Serial is extracted from filename.slice(0,4) — NEVER from fm['id'] which loses
  * zero-padding (RESEARCH.md Pitfall 7).
  *
  * CANONICAL: reads fm['note_position'] into viewportCoords — the SAME key that
  * buildFrontmatter writes. Do NOT use alternative key names.
+ * Also maps fm['reply'] → reply and fm['fixed_in'] → fixedIn (snake_case → camelCase).
  */
-export function listAnnotations(notesDir: string, pageUrl: string): PinDescriptor[] {
+export function listAnnotations(
+  notesDir: string,
+  pageUrl: string,
+  opts?: { allUrls?: boolean },
+): PinDescriptor[] {
   // Read notes must not produce pins. The review-notes skill marks a note done
   // two ways (belt-and-suspenders): it renames the file to `*.read.md` AND sets
   // `status: read` in the frontmatter. Exclude both here so a marked-read note's
@@ -97,8 +112,9 @@ export function listAnnotations(notesDir: string, pageUrl: string): PinDescripto
     // Skip notes without a string url field
     if (typeof fm['url'] !== 'string') continue;
 
-    // D-02: path-only URL match (query string ignored)
-    if (!matchesUrlPath(fm['url'], pageUrl)) continue;
+    // D-02: path-only URL match (query string ignored). Skipped for project-wide
+    // listing (opts.allUrls) so notes from every page are returned.
+    if (!opts?.allUrls && !matchesUrlPath(fm['url'], pageUrl)) continue;
 
     // Extract first line of body as text
     const bodyStart = content.indexOf('\n---', 3) + 4; // skip closing ---\n
@@ -115,6 +131,8 @@ export function listAnnotations(notesDir: string, pageUrl: string): PinDescripto
       // CANONICAL KEY: note_position — D-03
       viewportCoords: fm['note_position'] as PinDescriptor['viewportCoords'],
       screenshots: Array.isArray(fm['screenshots']) ? (fm['screenshots'] as string[]) : [],
+      reply: typeof fm['reply'] === 'string' ? fm['reply'] : undefined,
+      fixedIn: typeof fm['fixed_in'] === 'string' ? fm['fixed_in'] : undefined,
     });
   }
 

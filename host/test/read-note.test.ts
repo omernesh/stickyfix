@@ -4,7 +4,8 @@
  * Covers HOST-14/15/16:
  *   - resolveSerialFile: finds *.md and *.read.md by serial prefix; returns null on miss
  *   - listAnnotations: URL path match (query ignored), serial extraction, mode/status/rect/
- *     viewportCoords from frontmatter; skips notes with non-string url
+ *     viewportCoords from frontmatter; skips notes with non-string url; reply/fixed_in
+ *     round-trip; resolved/flagged notes visible; allUrls project-wide listing (read still excluded)
  *   - editNote: rewrites body + sets status:unread; preserves frontmatter + screenshots; 404 on miss
  *   - deleteNote: removes .md + +N.png siblings; 404 on miss; path confinement
  *
@@ -218,6 +219,102 @@ describe('listAnnotations', () => {
     const pin = pins.find(p => p.serial === '0010');
     assert.ok(pin, 'should find note 0010');
     assert.strictEqual(pin.text, 'First line text content');
+  });
+
+  test('reply and fixed_in frontmatter round-trip into reply/fixedIn', () => {
+    writeFixture(dir, '0011-20260603-100000.md', {
+      id: 11, mode: 'free', url: 'https://example.com/page',
+      status: 'resolved', screenshots: [],
+      reply: 'Fixed in commit abc123', fixed_in: 'abc123',
+    }, 'Note with AI reply');
+
+    const pins = listAnnotations(dir, 'https://example.com/page');
+    const pin = pins.find(p => p.serial === '0011');
+    assert.ok(pin, 'should find note 0011');
+    assert.strictEqual(pin.reply, 'Fixed in commit abc123');
+    assert.strictEqual(pin.fixedIn, 'abc123');
+  });
+
+  test('status:resolved note IS returned with its reply present', () => {
+    writeFixture(dir, '0012-20260603-100000.md', {
+      id: 12, mode: 'element', url: 'https://example.com/page',
+      status: 'resolved', screenshots: [],
+      selector: '#submit', reply: 'Done in PR #42',
+    }, 'Resolved note body');
+
+    const pins = listAnnotations(dir, 'https://example.com/page');
+    const pin = pins.find(p => p.serial === '0012');
+    assert.ok(pin, 'resolved note must be visible (returned)');
+    assert.strictEqual(pin.status, 'resolved');
+    assert.strictEqual(pin.reply, 'Done in PR #42');
+  });
+
+  test('status:flagged note IS returned (visible)', () => {
+    writeFixture(dir, '0013-20260603-100000.md', {
+      id: 13, mode: 'free', url: 'https://example.com/page',
+      status: 'flagged', screenshots: [],
+    }, 'Flagged note body');
+
+    const pins = listAnnotations(dir, 'https://example.com/page');
+    const pin = pins.find(p => p.serial === '0013');
+    assert.ok(pin, 'flagged note must be visible (returned)');
+    assert.strictEqual(pin.status, 'flagged');
+  });
+});
+
+// ---------------------------------------------------------------------------
+// listAnnotations — project-wide listing (allUrls)
+// ---------------------------------------------------------------------------
+
+describe('listAnnotations (allUrls / project-wide)', () => {
+  let dir: string;
+  test.before(() => { dir = mkdtempSync(join(tmpdir(), 'sfx-read-allurls-')); });
+  test.after(() => { rmSync(dir, { recursive: true, force: true }); });
+
+  test('allUrls:true returns notes whose url path does NOT match pageUrl', () => {
+    writeFixture(dir, '0030-20260603-100000.md', {
+      id: 30, mode: 'free', url: 'https://example.com/page-a',
+      status: 'unread', screenshots: [],
+    }, 'Note on page A');
+    writeFixture(dir, '0031-20260603-100000.md', {
+      id: 31, mode: 'free', url: 'https://example.com/page-b',
+      status: 'unread', screenshots: [],
+    }, 'Note on page B');
+
+    // Without opts: only the matching path is returned
+    const matchOnly = listAnnotations(dir, 'https://example.com/page-a');
+    assert.strictEqual(matchOnly.length, 1);
+    assert.strictEqual(matchOnly[0].serial, '0030');
+
+    // With allUrls: both notes returned regardless of pageUrl path
+    const all = listAnnotations(dir, 'https://example.com/page-a', { allUrls: true });
+    const serials = all.map(p => p.serial).sort();
+    assert.deepStrictEqual(serials, ['0030', '0031']);
+  });
+
+  test('allUrls:true still excludes status:read and .read.md notes', () => {
+    writeFixture(dir, '0032-20260603-100000.md', {
+      id: 32, mode: 'free', url: 'https://other.com/x',
+      status: 'read', screenshots: [],
+    }, 'Read via frontmatter');
+    writeFixture(dir, '0033-20260603-100000.read.md', {
+      id: 33, mode: 'free', url: 'https://other.com/y',
+      status: 'unread', screenshots: [],
+    }, 'Read via filename');
+
+    const all = listAnnotations(dir, 'https://example.com/page-a', { allUrls: true });
+    assert.strictEqual(all.find(p => p.serial === '0032'), undefined, 'status:read excluded even with allUrls');
+    assert.strictEqual(all.find(p => p.serial === '0033'), undefined, '.read.md excluded even with allUrls');
+  });
+
+  test('allUrls:true still skips notes without a string url field', () => {
+    writeFileSync(
+      join(dir, '0034-20260603-100000.md'),
+      '---\nid: 34\nmode: free\nstatus: unread\nscreenshots: []\n---\nno url field\n',
+      'utf8'
+    );
+    const all = listAnnotations(dir, 'https://example.com/page-a', { allUrls: true });
+    assert.strictEqual(all.find(p => p.serial === '0034'), undefined, 'note without url skipped even with allUrls');
   });
 });
 
