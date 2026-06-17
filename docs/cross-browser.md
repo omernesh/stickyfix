@@ -116,6 +116,25 @@ HKCU\Software\Mozilla\NativeMessagingHosts\com.stickyfix.host
 The registry value (Default) must point to the absolute path of the manifest JSON
 file, matching the pattern used for Chrome/Edge.
 
+**Windows coexistence — distinct filenames.** On Windows the Firefox manifest and
+its launcher wrapper live in the same stickyfix data dir as the Chrome ones
+(`~/.local/share/stickyfix/`). To let both browsers be installed at once, the
+Firefox files use a `.firefox` infix so they never collide with — or get deleted
+alongside — the Chrome files:
+
+| File | Chrome | Firefox |
+|------|--------|---------|
+| On-disk manifest JSON | `com.stickyfix.host.json` | `com.stickyfix.host.firefox.json` |
+| Native-host wrapper | `com.stickyfix.host.bat` | `com.stickyfix.host.firefox.bat` |
+
+The Firefox registry value points at `com.stickyfix.host.firefox.json`, whose
+`path` field points at `com.stickyfix.host.firefox.bat`. Because the wrapper is a
+separate file, `npx stickyfix uninstall --browser firefox` removes only the
+Firefox wrapper and leaves the Chrome wrapper (still referenced by the Chrome
+manifest) intact. (On macOS/Linux Firefox uses its own Mozilla directory, so the
+manifest keeps the canonical `com.stickyfix.host.json` filename there; only the
+wrapper carries the `.firefox` infix to stay paired.)
+
 ### Required extension manifest addition
 
 ```json

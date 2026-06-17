@@ -34,6 +34,13 @@ const FIREFOX_MANIFEST_FILENAME = `${NATIVE_HOST_NAME}.firefox.json`;
 // manifest must point at a wrapper that runs `node <abs cjs>`.
 const NATIVE_WRAPPER_WIN = `${NATIVE_HOST_NAME}.bat`;
 const NATIVE_WRAPPER_NIX = `${NATIVE_HOST_NAME}.sh`;
+// Firefox wrapper file names — MUST be distinct from the Chrome wrapper. On
+// Windows both browsers share the stickyfix data dir, so a shared wrapper file
+// would be deleted by a Firefox uninstall and break a co-installed Chrome whose
+// manifest still references that absolute path (cross-browser regression). The
+// suffix mirrors FIREFOX_MANIFEST_FILENAME so manifest+wrapper stay paired.
+const NATIVE_WRAPPER_WIN_FIREFOX = `${NATIVE_HOST_NAME}.firefox.bat`;
+const NATIVE_WRAPPER_NIX_FIREFOX = `${NATIVE_HOST_NAME}.firefox.sh`;
 
 // Chrome/Edge registry key prefixes (Windows HKCU — Pitfall 5: never HKLM)
 const REG_CHROME_KEY = `HKCU\\Software\\Google\\Chrome\\NativeMessagingHosts\\${NATIVE_HOST_NAME}`;
@@ -137,7 +144,9 @@ export function nativeWrapperPath(
   browser: TargetBrowser = 'chrome',
 ): string {
   const dir = dirname(nativeManifestPath(plat, home, browser));
-  return join(dir, plat === 'win32' ? NATIVE_WRAPPER_WIN : NATIVE_WRAPPER_NIX);
+  const winName = browser === 'firefox' ? NATIVE_WRAPPER_WIN_FIREFOX : NATIVE_WRAPPER_WIN;
+  const nixName = browser === 'firefox' ? NATIVE_WRAPPER_NIX_FIREFOX : NATIVE_WRAPPER_NIX;
+  return join(dir, plat === 'win32' ? winName : nixName);
 }
 
 /**

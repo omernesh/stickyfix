@@ -721,6 +721,7 @@ describe('Firefox: buildManifest — allowed_extensions (not allowed_origins)', 
 describe('Firefox: registerNativeHost — Mozilla registry key + manifest', () => {
   let tmpDir: string;
   const GECKO_ID = 'stickyfix@stickyfix.dev';
+  const VALID_AP_ID = 'abcdefghijklmnopabcdefghijklmnop'; // 32 a-p chars (Chrome)
 
   before(() => {
     tmpDir = mkdtempSync(join(tmpdir(), 'sfx-ff-reg-test-'));
@@ -760,6 +761,47 @@ describe('Firefox: registerNativeHost — Mozilla registry key + manifest', () =
     const wrapperPath = nativeWrapperPath('win32', tmpDir, 'firefox');
     assert.ok(existsSync(wrapperPath), `Wrapper should exist at ${wrapperPath}`);
     assert.strictEqual(manifest.path, wrapperPath, 'Manifest path must point at the wrapper');
+    // The Firefox wrapper MUST be a file distinct from the Chrome wrapper, else
+    // a Firefox uninstall would clobber a co-installed Chrome (HIGH regression).
+    assert.ok(
+      wrapperPath.endsWith('.firefox.bat'),
+      `Firefox win32 wrapper must be .firefox.bat, got: ${wrapperPath}`
+    );
+    assert.notStrictEqual(
+      wrapperPath,
+      nativeWrapperPath('win32', tmpDir, 'chrome'),
+      'Firefox wrapper path must differ from Chrome wrapper path'
+    );
+  });
+
+  test('win32: Firefox uninstall does NOT remove the co-installed Chrome wrapper', () => {
+    const hostBinPath = join(tmpDir, 'dist', 'host', 'stickyfix-native.cjs');
+    const noopReg = () => {};
+    // Install BOTH browsers (no-op execReg — never touch the real HKCU).
+    registerNativeHost({ extensionId: VALID_AP_ID, hostBinPath, plat: 'win32', home: tmpDir, browser: 'chrome', execReg: noopReg });
+    registerNativeHost({ extensionId: GECKO_ID, hostBinPath, plat: 'win32', home: tmpDir, browser: 'firefox', execReg: noopReg });
+
+    const chromeWrapper = nativeWrapperPath('win32', tmpDir, 'chrome');
+    const firefoxWrapper = nativeWrapperPath('win32', tmpDir, 'firefox');
+    assert.ok(existsSync(chromeWrapper), 'Chrome wrapper should exist after chrome install');
+    assert.ok(existsSync(firefoxWrapper), 'Firefox wrapper should exist after firefox install');
+    assert.notStrictEqual(chromeWrapper, firefoxWrapper, 'wrappers must be distinct files');
+    // Chrome wrapper keeps the canonical (unsuffixed) name — regression guard.
+    assert.ok(chromeWrapper.endsWith('com.stickyfix.host.bat'), `Chrome wrapper name changed: ${chromeWrapper}`);
+
+    // Uninstall ONLY Firefox.
+    unregisterNativeHost({ plat: 'win32', home: tmpDir, browser: 'firefox' });
+
+    assert.ok(!existsSync(firefoxWrapper), 'Firefox wrapper should be removed by firefox uninstall');
+    assert.ok(
+      existsSync(chromeWrapper),
+      'Chrome wrapper MUST survive a Firefox uninstall (cross-browser regression guard)'
+    );
+
+    // The Chrome manifest still points at the surviving Chrome wrapper.
+    const chromeManifestPath = nativeManifestPath('win32', tmpDir, 'chrome');
+    const chromeManifest = JSON.parse(readFileSync(chromeManifestPath, 'utf8')) as { path: string };
+    assert.strictEqual(chromeManifest.path, chromeWrapper, 'Chrome manifest must still reference its wrapper');
   });
 
   test('linux: writes the Firefox manifest under .mozilla and round-trips unregister', () => {

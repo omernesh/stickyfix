@@ -38,6 +38,25 @@ const { values, positionals } = parseArgs({
 const [subcommand] = positionals;
 
 // ---------------------------------------------------------------------------
+// Browser resolution (shared by init + uninstall)
+// ---------------------------------------------------------------------------
+
+/**
+ * Resolve the --browser flag to a TargetBrowser, exiting with an error on any
+ * value other than chrome/firefox. Default (flag absent) is chrome — which
+ * covers Chrome + Edge. Used by both init and uninstall so an unknown value is
+ * never silently coerced to chrome.
+ */
+function resolveBrowser(raw: unknown): TargetBrowser {
+  if (raw === undefined) return 'chrome';
+  if (typeof raw !== 'string' || !['chrome', 'firefox'].includes(raw.toLowerCase())) {
+    console.error(`stickyfix: unknown --browser "${String(raw)}" (expected chrome or firefox)`);
+    process.exit(1);
+  }
+  return raw.toLowerCase() === 'firefox' ? 'firefox' : 'chrome';
+}
+
+// ---------------------------------------------------------------------------
 // Config path
 // ---------------------------------------------------------------------------
 
@@ -61,14 +80,7 @@ if (subcommand === 'init') {
   }
 
   // Resolve target browser (default chrome — covers Chrome + Edge).
-  const browser: TargetBrowser =
-    typeof rawBrowser === 'string' && rawBrowser.toLowerCase() === 'firefox'
-      ? 'firefox'
-      : 'chrome';
-  if (typeof rawBrowser === 'string' && !['chrome', 'firefox'].includes(rawBrowser.toLowerCase())) {
-    console.error(`stickyfix init: unknown --browser "${rawBrowser}" (expected chrome or firefox)`);
-    process.exit(1);
-  }
+  const browser: TargetBrowser = resolveBrowser(rawBrowser);
   const isFirefox = browser === 'firefox';
 
   // Resolve the extension identity.
@@ -223,11 +235,7 @@ if (subcommand === 'init') {
 // ---------------------------------------------------------------------------
 
 } else if (subcommand === 'uninstall') {
-  const rawBrowser = values['browser'];
-  const browser: TargetBrowser =
-    typeof rawBrowser === 'string' && rawBrowser.toLowerCase() === 'firefox'
-      ? 'firefox'
-      : 'chrome';
+  const browser: TargetBrowser = resolveBrowser(values['browser']);
   try {
     unregisterNativeHost({ browser });
   } catch (err) {
