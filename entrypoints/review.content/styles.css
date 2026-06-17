@@ -945,3 +945,11 @@
   animation: sfx-pin-pulse 1.5s ease-out forwards;
   z-index: 3;
 }
+
+/* Decluttered pin — cascade-offset member (index > 0 in a collision group).
+ * Subtle scale-down signals it is secondary without changing base geometry. */
+.sfx-pin.sfx-pin-declustered {
+  transform: scale(0.85);
+  outline: 1px solid rgba(0, 0, 0, 0.18);
+  outline-offset: 1px;
+}

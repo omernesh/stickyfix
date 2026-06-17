@@ -50,6 +50,8 @@ interface PinEntry {
   data: PinDescriptor;
   lastLeft?: number;
   lastTop?: number;
+  baseLeft?: number;
+  baseTop?: number;
 }
 
 let _pinEntries: PinEntry[] = [];
@@ -167,8 +169,14 @@ export async function mountPins(
     // Position the pin
     _positionPin(pinEl, data, anchorEl);
 
-    // Track entry
-    const entry: PinEntry = { pin: pinEl, el: anchorEl, data };
+    // Track entry — capture base position (raw from computePinPosition, before declutter)
+    const entry: PinEntry = {
+      pin: pinEl,
+      el: anchorEl,
+      data,
+      baseLeft: parseFloat(pinEl.style.left) || 0,
+      baseTop: parseFloat(pinEl.style.top) || 0,
+    };
     _pinEntries.push(entry);
 
     // Wire hover preview show/hide
@@ -246,6 +254,9 @@ export async function mountPins(
     window.addEventListener('load', onWindowLoad);
     _cleanupFns.push(() => window.removeEventListener('load', onWindowLoad));
   }
+
+  // Initial declutter pass — fan out any pins whose base positions overlap
+  _declutterPins();
 }
 
 /**
@@ -732,6 +743,10 @@ function _repositionElementPins(): void {
         orphaned
       );
 
+      // Store base position (raw computePinPosition result, before declutter offset)
+      entry.baseLeft = left;
+      entry.baseTop = top;
+
       if (entry.lastLeft !== left || entry.lastTop !== top) {
         entry.pin.style.left = `${left}px`;
         entry.pin.style.top = `${top}px`;
@@ -746,6 +761,105 @@ function _repositionElementPins(): void {
         entry.pin.classList.remove('sfx-pin-orphaned');
         entry.pin.title = '';
       }
+    }
+  }
+
+  // Re-declutter after repositioning in case base positions shifted
+  _declutterPins();
+}
+
+/**
+ * Declutter overlapping pins by fanning them out with a cascade offset.
+ *
+ * Algorithm:
+ *  - Collision radius: 26px Euclidean distance between base positions.
+ *  - O(n²) grouping: collect all entries within radius of each entry,
+ *    deduplicate groups by sorting member serials and using as map key.
+ *  - Each group with N > 1 members is sorted by serial (ascending) for
+ *    stable order. Member at index i gets offset (i*14, i*14) px.
+ *  - Singletons (no collision) keep their base position unchanged.
+ *  - Change-guard: only writes style when value differs from lastLeft/lastTop.
+ *  - sfx-pin-declustered class added to members at index > 0, removed from
+ *    members at index 0 and singletons.
+ */
+function _declutterPins(): void {
+  const COLLISION_RADIUS = 26;
+  const CASCADE_STEP = 14;
+
+  // Only operate on entries with a known base position
+  const active = _pinEntries.filter(
+    e => e.baseLeft !== undefined && e.baseTop !== undefined
+  );
+
+  if (active.length === 0) return;
+
+  // Build collision groups via O(n²) search.
+  // Key = sorted serials joined; value = member entries.
+  const groupMap = new Map<string, PinEntry[]>();
+
+  for (const entry of active) {
+    // Collect all entries (including self) within radius
+    const members: PinEntry[] = [];
+    for (const other of active) {
+      const dx = (entry.baseLeft as number) - (other.baseLeft as number);
+      const dy = (entry.baseTop as number) - (other.baseTop as number);
+      if (Math.sqrt(dx * dx + dy * dy) <= COLLISION_RADIUS) {
+        members.push(other);
+      }
+    }
+    // Deduplicate groups by canonical key (sorted serials)
+    const key = members
+      .map(m => m.data.serial)
+      .sort()
+      .join('\0');
+    if (!groupMap.has(key)) {
+      groupMap.set(key, members);
+    }
+  }
+
+  // Build a per-entry result map: serial → { finalLeft, finalTop, declustered }
+  const result = new Map<string, { finalLeft: number; finalTop: number; declustered: boolean }>();
+
+  for (const members of groupMap.values()) {
+    if (members.length > 1) {
+      // Sort by serial ascending for stable, deterministic order
+      const sorted = [...members].sort((a, b) =>
+        a.data.serial < b.data.serial ? -1 : a.data.serial > b.data.serial ? 1 : 0
+      );
+      sorted.forEach((m, i) => {
+        result.set(m.data.serial, {
+          finalLeft: (m.baseLeft as number) + i * CASCADE_STEP,
+          finalTop: (m.baseTop as number) + i * CASCADE_STEP,
+          declustered: i > 0,
+        });
+      });
+    } else {
+      // Singleton — keep base position
+      const m = members[0];
+      result.set(m.data.serial, {
+        finalLeft: m.baseLeft as number,
+        finalTop: m.baseTop as number,
+        declustered: false,
+      });
+    }
+  }
+
+  // Apply results with change-guard
+  for (const entry of active) {
+    const r = result.get(entry.data.serial);
+    if (!r) continue;
+
+    if (entry.lastLeft !== r.finalLeft || entry.lastTop !== r.finalTop) {
+      entry.pin.style.left = `${r.finalLeft}px`;
+      entry.pin.style.top = `${r.finalTop}px`;
+      entry.lastLeft = r.finalLeft;
+      entry.lastTop = r.finalTop;
+    }
+
+    if (r.declustered) {
+      entry.pin.classList.add('sfx-pin-declustered');
+    } else {
+      entry.pin.classList.remove('sfx-pin-declustered');
     }
   }
 }
