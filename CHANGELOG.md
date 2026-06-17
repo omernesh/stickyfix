@@ -7,6 +7,11 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [1.0.4] - 2026-06-17
+
+### Fixed
+- **Read notes no longer show a pin:** marking a note read (via the `review-notes` skill) now removes its pin from the page on the next refresh. The host's `listAnnotations` previously returned every note matching the page URL — including read ones — so a marked-read note's pin lingered (merely dimmed) until the file was deleted. The host now excludes notes the skill has marked done, by both signals it writes: the `*.read.md` filename rename (primary) and `status: read` in frontmatter (secondary). Unread notes are never affected — a freshly written note is always `status: unread` with a plain `.md` name, so the reliable-capture invariant holds.
+
 ## [1.0.3] - 2026-06-10
 
 ### Fixed

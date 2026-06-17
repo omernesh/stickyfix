@@ -70,7 +70,14 @@ export function resolveSerialFile(notesDir: string, serial: string): string | nu
  * buildFrontmatter writes. Do NOT use alternative key names.
  */
 export function listAnnotations(notesDir: string, pageUrl: string): PinDescriptor[] {
-  const files = readdirSync(notesDir).filter(f => f.endsWith('.md'));
+  // Read notes must not produce pins. The review-notes skill marks a note done
+  // two ways (belt-and-suspenders): it renames the file to `*.read.md` AND sets
+  // `status: read` in the frontmatter. Exclude both here so a marked-read note's
+  // pin disappears on the next refresh. The filename check is the robust primary
+  // signal (works even if the frontmatter status is stale or missing).
+  const files = readdirSync(notesDir).filter(
+    f => f.endsWith('.md') && !f.endsWith('.read.md')
+  );
   const pins: PinDescriptor[] = [];
 
   for (const file of files) {
@@ -82,6 +89,10 @@ export function listAnnotations(notesDir: string, pageUrl: string): PinDescripto
     if (!fmMatch) continue;
 
     const fm = yamlParse(fmMatch[1]) as Record<string, unknown>;
+
+    // Skip notes explicitly marked read in frontmatter (secondary signal —
+    // catches an in-place status flip that did not rename the file).
+    if ((fm['status'] as string) === 'read') continue;
 
     // Skip notes without a string url field
     if (typeof fm['url'] !== 'string') continue;

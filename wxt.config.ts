@@ -4,7 +4,7 @@ export default defineConfig({
   manifest: {
     name: 'stickyfix',
     description: 'Pin sticky notes on any page — your AI reads them.',
-    version: '1.0.3',
+    version: '1.0.4',
     icons: {
       16: '/icon/16.png',
       32: '/icon/32.png',

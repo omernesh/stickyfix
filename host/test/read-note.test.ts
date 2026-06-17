@@ -136,7 +136,7 @@ describe('listAnnotations', () => {
   test('reads mode and status from frontmatter', () => {
     writeFixture(dir, '0006-20260603-100000.md', {
       id: 6, mode: 'element', url: 'https://example.com/page',
-      status: 'read', screenshots: [],
+      status: 'flagged', screenshots: [],
       selector: '#save-btn',
     }, 'Element note body');
 
@@ -144,8 +144,30 @@ describe('listAnnotations', () => {
     const pin = pins.find(p => p.serial === '0006');
     assert.ok(pin, 'should find note 0006');
     assert.strictEqual(pin.mode, 'element');
-    assert.strictEqual(pin.status, 'read');
+    assert.strictEqual(pin.status, 'flagged');
     assert.strictEqual(pin.selector, '#save-btn');
+  });
+
+  test('excludes note marked read via status:read frontmatter', () => {
+    writeFixture(dir, '0020-20260603-100000.md', {
+      id: 20, mode: 'free', url: 'https://example.com/page',
+      status: 'read', screenshots: [],
+    }, 'Read note body');
+
+    const pins = listAnnotations(dir, 'https://example.com/page');
+    const found = pins.find(p => p.serial === '0020');
+    assert.strictEqual(found, undefined, 'read note must not produce a pin');
+  });
+
+  test('excludes note marked read via .read.md filename', () => {
+    writeFixture(dir, '0021-20260603-100000.read.md', {
+      id: 21, mode: 'free', url: 'https://example.com/page',
+      status: 'unread', screenshots: [],
+    }, 'Renamed read note body');
+
+    const pins = listAnnotations(dir, 'https://example.com/page');
+    const found = pins.find(p => p.serial === '0021');
+    assert.strictEqual(found, undefined, '.read.md note must not produce a pin');
   });
 
   test('free-note: note_position frontmatter round-trips into viewportCoords (D-03 canonical key)', () => {
