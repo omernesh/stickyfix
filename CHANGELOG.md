@@ -7,6 +7,15 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [1.1.1] - 2026-06-17
+
+### Fixed
+- **Free-note pins now restore where you dropped them.** A wire-key mismatch (the host serialized the field as `viewportCoords` while the extension read `note_position`) meant every free-floating pin fell back to the top-left corner instead of its saved position. The host descriptor field is now `note_position` end-to-end (matching the on-disk frontmatter key and the extension). Pre-existing since persistent pins shipped; surfaced by the v1.1.0 review.
+- **All-pages live sync.** When the notes panel is in "All pages" mode, the live poller now polls project-wide, so a reply/status change to a note on another page updates the panel without a manual refresh (a scope switch itself no longer triggers a spurious pin re-render).
+
+### Internal
+- The service-worker `PinDescriptor` type now declares `reply`/`fixedIn` (type honesty; the fields were already forwarded structurally).
+
 ## [1.1.0] - 2026-06-17
 
 ### Added

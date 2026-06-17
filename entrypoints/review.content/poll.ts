@@ -7,6 +7,7 @@
  */
 
 import { SFX_LIST_ANNOTATIONS } from '../../lib/types.js';
+import { getActiveScope } from './panel.js';
 
 // ---------------------------------------------------------------------------
 // Module state — fully reset in stopPinPolling()
@@ -16,6 +17,7 @@ let _intervalId: ReturnType<typeof setInterval> | null = null;
 let _tabId: number | null = null;
 let _onChange: (() => void) | null = null;
 let _lastSig: string | null = null;            // null = no baseline yet
+let _lastScope: 'all' | undefined = undefined; // scope the baseline was taken at
 let _visibilityListener: (() => void) | null = null;
 
 // ---------------------------------------------------------------------------
@@ -46,8 +48,13 @@ function _tick(): void {
   const tabId = _tabId;
   const onChange = _onChange;
 
+  // Match the scope the user is viewing: when the notes panel is open in
+  // "All pages" mode, poll project-wide so a change to a note on another page
+  // still triggers a refresh. Otherwise poll the current page only.
+  const scope = getActiveScope();
+
   chrome.runtime.sendMessage(
-    { type: SFX_LIST_ANNOTATIONS, tabId },
+    { type: SFX_LIST_ANNOTATIONS, tabId, scope },
     (resp: unknown) => {
       // Guard: extension context gone or no response
       if (chrome.runtime.lastError) return;
@@ -61,9 +68,13 @@ function _tick(): void {
       const pins: PinSig[] = Array.isArray(r.pins) ? r.pins : [];
       const current = sig(pins);
 
-      if (_lastSig === null) {
-        // First successful fetch — establish baseline, do NOT call onChange.
+      if (_lastSig === null || scope !== _lastScope) {
+        // First successful fetch, or the viewing scope just changed (panel
+        // All-pages toggled) — re-establish the baseline, do NOT call onChange.
+        // The panel already refreshed itself on toggle; a scope switch is not a
+        // disk change and must not trigger a pin re-render flash.
         _lastSig = current;
+        _lastScope = scope;
         return;
       }
 
@@ -93,6 +104,7 @@ export function startPinPolling(
   _tabId = tabId;
   _onChange = onChange;
   _lastSig = null;  // reset baseline — first successful tick sets it
+  _lastScope = undefined;
 
   _intervalId = setInterval(_tick, intervalMs);
 
@@ -119,4 +131,5 @@ export function stopPinPolling(): void {
   _tabId = null;
   _onChange = null;
   _lastSig = null;
+  _lastScope = undefined;
 }

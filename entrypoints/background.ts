@@ -528,6 +528,9 @@ interface PinDescriptor {
   rect?: { x: number; y: number; width: number; height: number };
   note_position?: { x: number; y: number };
   screenshots: string[];
+  /** AI reply / commit ref written by the review-notes skill — forwarded verbatim */
+  reply?: string;
+  fixedIn?: string;
 }
 
 async function handleListAnnotations(

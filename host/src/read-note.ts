@@ -29,8 +29,11 @@ export interface PinDescriptor {
   text: string;
   selector?: string;
   rect?: { x: number; y: number; width: number; height: number };
-  /** Populated from fm['note_position'] — the CANONICAL key (D-03) */
-  viewportCoords?: { x: number; y: number };
+  /** Free-note viewport coords — from fm['note_position'], the CANONICAL key (D-03).
+   *  Property name MUST match the extension consumer (pin.ts/_positionPin reads
+   *  `note_position` off the wire); a `viewportCoords` name here silently breaks
+   *  free-pin placement end-to-end. */
+  note_position?: { x: number; y: number };
   screenshots: string[];
   /** AI reply written by the review-notes skill — from fm['reply'] */
   reply?: string;
@@ -76,8 +79,9 @@ export function resolveSerialFile(notesDir: string, serial: string): string | nu
  * Serial is extracted from filename.slice(0,4) — NEVER from fm['id'] which loses
  * zero-padding (RESEARCH.md Pitfall 7).
  *
- * CANONICAL: reads fm['note_position'] into viewportCoords — the SAME key that
- * buildFrontmatter writes. Do NOT use alternative key names.
+ * CANONICAL: reads fm['note_position'] into the note_position descriptor field —
+ * the SAME key that buildFrontmatter writes AND the extension consumer reads off
+ * the wire. Do NOT use alternative key names (a mismatch breaks free-pin placement).
  * Also maps fm['reply'] → reply and fm['fixed_in'] → fixedIn (snake_case → camelCase).
  */
 export function listAnnotations(
@@ -128,8 +132,8 @@ export function listAnnotations(
       text,
       selector: typeof fm['selector'] === 'string' ? fm['selector'] : undefined,
       rect: fm['rect'] as PinDescriptor['rect'],
-      // CANONICAL KEY: note_position — D-03
-      viewportCoords: fm['note_position'] as PinDescriptor['viewportCoords'],
+      // CANONICAL KEY: note_position — D-03 (same name on disk, descriptor, and wire)
+      note_position: fm['note_position'] as PinDescriptor['note_position'],
       screenshots: Array.isArray(fm['screenshots']) ? (fm['screenshots'] as string[]) : [],
       reply: typeof fm['reply'] === 'string' ? fm['reply'] : undefined,
       fixedIn: typeof fm['fixed_in'] === 'string' ? fm['fixed_in'] : undefined,

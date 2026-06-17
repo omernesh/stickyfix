@@ -4,12 +4,12 @@
  * Covers HOST-14/15/16:
  *   - resolveSerialFile: finds *.md and *.read.md by serial prefix; returns null on miss
  *   - listAnnotations: URL path match (query ignored), serial extraction, mode/status/rect/
- *     viewportCoords from frontmatter; skips notes with non-string url; reply/fixed_in
+ *     note_position from frontmatter; skips notes with non-string url; reply/fixed_in
  *     round-trip; resolved/flagged notes visible; allUrls project-wide listing (read still excluded)
  *   - editNote: rewrites body + sets status:unread; preserves frontmatter + screenshots; 404 on miss
  *   - deleteNote: removes .md + +N.png siblings; 404 on miss; path confinement
  *
- * D-03: free-note note_position frontmatter round-trips into viewportCoords (canonical key check).
+ * D-03: free-note note_position frontmatter round-trips into the note_position field (canonical key check).
  *
  * Pattern: mkdtempSync tmpdir lifecycle per describe; full frontmatter fixtures.
  */
@@ -171,7 +171,7 @@ describe('listAnnotations', () => {
     assert.strictEqual(found, undefined, '.read.md note must not produce a pin');
   });
 
-  test('free-note: note_position frontmatter round-trips into viewportCoords (D-03 canonical key)', () => {
+  test('free-note: note_position frontmatter round-trips into note_position (D-03 canonical key)', () => {
     writeFixture(dir, '0007-20260603-100000.md', {
       id: 7, mode: 'free', url: 'https://example.com/page',
       status: 'unread', screenshots: [],
@@ -181,7 +181,7 @@ describe('listAnnotations', () => {
     const pins = listAnnotations(dir, 'https://example.com/page');
     const pin = pins.find(p => p.serial === '0007');
     assert.ok(pin, 'should find note 0007');
-    assert.deepStrictEqual(pin.viewportCoords, { x: 320, y: 480 });
+    assert.deepStrictEqual(pin.note_position, { x: 320, y: 480 });
   });
 
   test('element-note: rect from frontmatter available in pin descriptor', () => {

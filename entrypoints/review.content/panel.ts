@@ -224,6 +224,16 @@ export function isPanelOpen(): boolean {
   return _open;
 }
 
+/**
+ * The list scope the user is currently viewing: 'all' when the panel is open
+ * AND the "All pages" toggle is on, otherwise undefined (current page only).
+ * Used by the live poller so an All-pages view also live-updates on changes to
+ * notes that live on other pages.
+ */
+export function getActiveScope(): 'all' | undefined {
+  return _open && _scopeAll ? 'all' : undefined;
+}
+
 // ---------------------------------------------------------------------------
 // Internals
 // ---------------------------------------------------------------------------
