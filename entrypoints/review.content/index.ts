@@ -20,6 +20,7 @@ import { captureElementContext } from '../../lib/element-context.js';
 import { exitPickMode } from './picker.js';
 import { mountPins, teardownPins } from './pin.js';
 import { mountPanel, togglePanel, teardownPanel, refreshPanel } from './panel.js';
+import { startPinPolling, stopPinPolling } from './poll.js';
 
 export default defineContentScript({
   matches: ['<all_urls>'],
@@ -152,6 +153,16 @@ export default defineContentScript({
             // Phase C: mount notes panel (hidden by default; tabId now resolved)
             mountPanel(container, tabId, toast);
 
+            startPinPolling(tabId, () => {
+              if (!container.isConnected) return;
+              teardownPins();
+              mountPins(container, tabId, toast).catch(
+                (err: unknown) => toast(`Could not load pins — ${String(err)}`, true)
+              );
+              refreshChipRoute(container);
+              refreshPanel();
+            });
+
             // SPA navigation re-scope: pins + chip route are URL-scoped, but an
             // in-page nav does not reload the document, so without this the prior
             // URL's pins linger on the new page. The SW sends URL_CHANGED on such
@@ -190,6 +201,7 @@ export default defineContentScript({
         detachUrlListener?.();
         detachUrlListener = null;
         pinRefresh = null;
+        stopPinPolling();
         if (elements?.container) {
           teardownChip(elements.container);
           // Also close any open card so card-state stays consistent
