@@ -47,7 +47,12 @@ export function tryListen(server: http.Server, port: number): Promise<boolean> {
  * attempt, removeAllListeners('error') and removeAllListeners('listening') are
  * called before the next attempt to prevent stale-handler accumulation.
  */
-export async function bindServer(server: http.Server, preferredPort?: number): Promise<number> {
+export async function bindServer(
+  server: http.Server,
+  preferredPort?: number,
+  startPort: number = PORT_RANGE_START,
+  endPort: number = PORT_RANGE_END,
+): Promise<number> {
   // Try preferred port first if specified
   if (preferredPort !== undefined) {
     const bound = await tryListen(server, preferredPort);
@@ -63,7 +68,10 @@ export async function bindServer(server: http.Server, preferredPort?: number): P
   // Scan range, reusing the real server across attempts.
   // WR-06: Remove stale handlers between attempts so a prior failed listen()
   // does not accumulate duplicate error/listening listeners on the server.
-  for (let port = PORT_RANGE_START; port <= PORT_RANGE_END; port++) {
+  // startPort/endPort default to the production range; tests override them with
+  // an OS-assigned ephemeral range so the scan-past-occupied path can be
+  // exercised hermetically (never colliding with a real host on 39240).
+  for (let port = startPort; port <= endPort; port++) {
     server.removeAllListeners('error');
     server.removeAllListeners('listening');
     const bound = await tryListen(server, port);
@@ -73,7 +81,7 @@ export async function bindServer(server: http.Server, preferredPort?: number): P
   }
 
   throw new Error(
-    `stickyfix-host: no free port found in ${PORT_RANGE_START}–${PORT_RANGE_END}. ` +
+    `stickyfix-host: no free port found in ${startPort}–${endPort}. ` +
     `Use --port to specify a different port.`
   );
 }

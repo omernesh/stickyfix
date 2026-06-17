@@ -10,24 +10,29 @@ import * as http from 'node:http';
 import type { AddressInfo } from 'node:net';
 import { bindServer, BIND_HOST } from '../src/bind.js';
 
-const PORT_RANGE_START = 39240;
-
 // ---------------------------------------------------------------------------
 // WR-06: port-scan skips an occupied port
+//
+// Hermetic by design: we occupy an OS-assigned ephemeral port (listen(0)) and
+// ask bindServer to scan a small range that STARTS on it. This exercises the
+// real "skip occupied, land on next free" logic without hardcoding the
+// production port 39240 — so the test passes even when a real stickyfix host
+// is already running on the production range.
 // ---------------------------------------------------------------------------
 
 describe('bindServer — port scan (WR-06)', () => {
-  // A blocker server that occupies PORT_RANGE_START (39240)
   let blocker: http.Server;
   let targetServer: http.Server;
+  let occupiedPort: number;
 
   before(async () => {
-    // Occupy 39240
+    // Occupy an ephemeral port chosen by the OS (never collides with a host).
     blocker = http.createServer();
     await new Promise<void>((resolve, reject) => {
       blocker.once('error', reject);
-      blocker.listen(PORT_RANGE_START, BIND_HOST, resolve);
+      blocker.listen(0, BIND_HOST, resolve);
     });
+    occupiedPort = (blocker.address() as AddressInfo).port;
   });
 
   after(async () => {
@@ -38,19 +43,21 @@ describe('bindServer — port scan (WR-06)', () => {
     }
   });
 
-  test('WR-06: server scans past occupied 39240 and binds to 39241', async () => {
+  test('WR-06: server scans past an occupied port and binds to the next free one', async () => {
     targetServer = http.createServer();
 
-    const port = await bindServer(targetServer);
+    // Scan range starts on the occupied port → bindServer must skip it.
+    const scanEnd = occupiedPort + 5;
+    const port = await bindServer(targetServer, undefined, occupiedPort, scanEnd);
 
     // Must have landed past the occupied port
     assert.ok(
-      port > PORT_RANGE_START,
-      `Expected port > ${PORT_RANGE_START} (blocker holds it), got ${port}`
+      port > occupiedPort,
+      `Expected port > ${occupiedPort} (blocker holds it), got ${port}`
     );
-    // Must still be within range
+    // Must still be within the scan range
     assert.ok(
-      port <= 39260,
+      port <= scanEnd,
       `Expected port within scan range, got ${port}`
     );
     // Must bind to 127.0.0.1 only
