@@ -74,6 +74,11 @@ interface SetRouteErrResponse {
 
 type SetRouteResponse = SetRouteOkResponse | SetRouteErrResponse;
 
+// Sentinel value for the "Browse folder…" dropdown option.
+// Cannot collide with a real host name (leading/trailing __ are forbidden by
+// the host registration logic in background.ts).
+const SFX_BROWSE_FOLDER = '__sfx_browse_folder__';
+
 // ---------------------------------------------------------------------------
 // Teardown registry — chip.ts exposes teardownChip(container) so index.ts
 // can call it from onRemove without coupling to DOM internals.
@@ -282,7 +287,7 @@ export function mountChip(
 
         if (resp.ok) {
           // Mapped — show routed label + wire D-09 re-map affordance
-          renderRoutedLabel(label, dot, resp.host, chip, feedback, sendBtn, tabId, origin, showFeedback);
+          renderRoutedLabel(label, dot, resp.host, chip, feedback, sendBtn, tabId, origin, showFeedback, resolveAndRender);
           wireSendButton(sendBtn, feedback, tabId, resp.host, showFeedback, resolveAndRender);
         } else if (resp.reason === 'unmapped') {
           // Step 4 — one-time dropdown (EXT-07/EXT-08)
@@ -375,7 +380,8 @@ function renderRoutedLabel(
   sendBtn: HTMLButtonElement,
   tabId: number,
   origin: string,
-  showFeedbackFn: (el: HTMLSpanElement, msg: string, isError: boolean) => void
+  showFeedbackFn: (el: HTMLSpanElement, msg: string, isError: boolean) => void,
+  onRouteMaybeChanged?: () => void
 ): void {
   // Remove any leftover one-time dropdown. resolveAndRender() (the refresh path
   // after a folder pick) lands here without going through renderDropdown's change
@@ -391,7 +397,7 @@ function renderRoutedLabel(
 
   // D-09: .onclick = assignment (idempotent — prevents stacking on re-renders)
   label.onclick = () => {
-    renderDropdown(chip, label, dot, feedback, sendBtn, tabId, origin, showFeedbackFn);
+    renderDropdown(chip, label, dot, feedback, sendBtn, tabId, origin, showFeedbackFn, onRouteMaybeChanged);
   };
   // UI-SPEC §4: cursor + tooltip signal clickability
   label.style.cursor = 'pointer';
@@ -425,10 +431,20 @@ function renderDropdown(
   select.className = 'sfx-chip-dropdown';
   select.setAttribute('aria-label', 'Select project for this origin');
 
-  // Default option
+  // "Browse folder…" option — sits at the top of the opened list so the user
+  // can map the origin to any folder on disk without needing a host entry.
+  // The sentinel value cannot collide with a real host name (see SFX_BROWSE_FOLDER).
+  const browseOpt = document.createElement('option');
+  browseOpt.value = SFX_BROWSE_FOLDER;
+  browseOpt.textContent = '📁 Browse folder…'; // textContent, not innerHTML (Pattern 9)
+  select.appendChild(browseOpt);
+
+  // Default placeholder — selected so the chip shows "— select project —" at
+  // rest while "Browse folder…" is still the first item in the opened list.
   const defaultOpt = document.createElement('option');
   defaultOpt.value = '';
   defaultOpt.textContent = '— select project —';
+  defaultOpt.selected = true;
   select.appendChild(defaultOpt);
 
   // Insert the select immediately; populate after the SW responds.
@@ -469,6 +485,43 @@ function renderDropdown(
 
   // Handle selection
   select.addEventListener('change', () => {
+    // ── Browse folder… sentinel ───────────────────────────────────────────────
+    // The user picked the "📁 Browse folder…" item — open the OS folder dialog
+    // directly from the dropdown (mirrors wireSendButton's needs-folder flow).
+    if (select.value === SFX_BROWSE_FOLDER) {
+      // Reset to placeholder so the item can be re-triggered after cancellation
+      select.value = '';
+      try {
+        chrome.runtime.sendMessage(
+          { type: SFX_MSG.PICK_FOLDER, tabId },
+          (pick: PickFolderResponse | undefined) => {
+            if (chrome.runtime.lastError || !pick) {
+              // REL-01: never silent — surface the dialog/SW failure
+              showFeedbackFn(feedback, 'No folder chosen — note not saved. Drop again to pick one.', true);
+              return;
+            }
+            if (pick.ok) {
+              // Folder chosen — confirm, remove dropdown, and let the chip
+              // re-resolve to the "→ name · <folder>" routed label.
+              showFeedbackFn(feedback, `Saving notes to ${pick.folder}`, false);
+              if (select.parentElement) select.parentElement.removeChild(select);
+              onRouteMaybeChanged?.();
+            } else if (pick.cancelled) {
+              // User cancelled the OS dialog — visible toast, no silent drop (REL-01).
+              showFeedbackFn(feedback, 'No folder chosen — note not saved. Drop again to pick one.', true);
+            } else {
+              // Real host/native error (REL-01).
+              showFeedbackFn(feedback, pick.error || 'Folder picker failed.', true);
+            }
+          }
+        );
+      } catch (e) {
+        showFeedbackFn(feedback, 'Extension error: ' + (e instanceof Error ? e.message : String(e)), true);
+      }
+      return; // do NOT fall through to host-routing logic
+    }
+    // ─────────────────────────────────────────────────────────────────────────
+
     const hostName = select.value;
     if (!hostName) return;
 
@@ -488,7 +541,7 @@ function renderDropdown(
         }
 
         // Render the mapped label + wire D-09 re-map affordance
-        renderRoutedLabel(label, dot, resp.host, chip, feedback, sendBtn, tabId, origin, showFeedbackFn);
+        renderRoutedLabel(label, dot, resp.host, chip, feedback, sendBtn, tabId, origin, showFeedbackFn, onRouteMaybeChanged);
 
         // Wire the Send button now that we have a host
         wireSendButton(sendBtn, feedback, tabId, resp.host, showFeedbackFn, onRouteMaybeChanged);

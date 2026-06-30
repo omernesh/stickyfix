@@ -8,6 +8,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ## [Unreleased]
 
 ### Added
+- **"Browse folder…" in the chip dropdown.** Review Mode's project pull-down now has a `📁 Browse folder…` item at the top, so you can pick the project folder for the current site directly — no longer only via the first Send. Selecting it opens the OS folder dialog, persists the origin→folder mapping, and the chip self-updates to the `→ name · <folder>` routed label. The existing host-routing options and the Send→needs-folder flow are unchanged.
 - **Firefox MV3 support (full port).** New `npm run build:firefox` WXT target emits a Firefox build with `browser_specific_settings.gecko.id` (`stikfix@stikfix.com`, `strict_min_version 109.0`). `npx stikfix init --root <dir> --browser firefox` registers a Firefox native-messaging host — `allowed_extensions` (gecko id) instead of `allowed_origins`, Mozilla manifest paths (macOS/Linux) and the `HKCU\Software\Mozilla\NativeMessagingHosts` registry key on Windows. The Chrome build is unchanged (same `key`, same derived extension ID).
 
 ### Changed
