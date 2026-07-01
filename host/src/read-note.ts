@@ -87,7 +87,7 @@ export function resolveSerialFile(notesDir: string, serial: string): string | nu
 export function listAnnotations(
   notesDir: string,
   pageUrl: string,
-  opts?: { allUrls?: boolean },
+  opts?: { allUrls?: boolean; includeDone?: boolean },
 ): PinDescriptor[] {
   // Read notes must not produce pins. The review-notes skill marks a note done
   // two ways (belt-and-suspenders): it renames the file to `*.read.md` AND sets
@@ -95,7 +95,7 @@ export function listAnnotations(
   // pin disappears on the next refresh. The filename check is the robust primary
   // signal (works even if the frontmatter status is stale or missing).
   const files = readdirSync(notesDir).filter(
-    f => f.endsWith('.md') && !f.endsWith('.read.md')
+    f => f.endsWith('.md') && (opts?.includeDone || !f.endsWith('.read.md'))
   );
   const pins: PinDescriptor[] = [];
 
@@ -111,7 +111,7 @@ export function listAnnotations(
 
     // Skip notes explicitly marked read in frontmatter (secondary signal —
     // catches an in-place status flip that did not rename the file).
-    if ((fm['status'] as string) === 'read') continue;
+    if (!opts?.includeDone && (fm['status'] as string) === 'read') continue;
 
     // Skip notes without a string url field
     if (typeof fm['url'] !== 'string') continue;

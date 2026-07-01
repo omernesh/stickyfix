@@ -107,6 +107,8 @@ export interface MsgListAnnotations {
   tabId: number;
   /** 'all' = skip URL filtering, return notes for ALL pages in the mapped folder */
   scope?: 'all';
+  /** true = include archived (*.read.md / status:read) notes (panel-only opt-in) */
+  done?: boolean;
   // pageUrl derived from chrome.tabs.get(tabId) in SW — NEVER from message body (anti-spoof)
 }
 

@@ -26,6 +26,7 @@ notes/
 # Logs / runtime
 *.log
 .stikfix-token
+.stikfix-port
 .DS_Store
 Thumbs.db
 

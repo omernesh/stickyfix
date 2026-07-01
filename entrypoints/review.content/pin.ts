@@ -697,9 +697,12 @@ function _positionPin(pin: HTMLElement, data: PinDescriptor, anchorEl: Element |
   pin.style.top = `${top}px`;
 
   if (isOrphaned) {
+    pin.style.display = 'none';
     pin.classList.add('sfx-pin-orphaned');
     // Orphaned tooltip via title attr — no innerHTML risk (T-06-05)
     pin.title = 'Element not found on this page — click to view or delete';
+  } else {
+    pin.style.display = '';
   }
 }
 
@@ -755,9 +758,11 @@ function _repositionElementPins(): void {
       }
 
       if (isOrphaned && !entry.pin.classList.contains('sfx-pin-orphaned')) {
+        entry.pin.style.display = 'none';
         entry.pin.classList.add('sfx-pin-orphaned');
         entry.pin.title = 'Element not found on this page — click to view or delete';
       } else if (!isOrphaned && entry.pin.classList.contains('sfx-pin-orphaned')) {
+        entry.pin.style.display = '';
         entry.pin.classList.remove('sfx-pin-orphaned');
         entry.pin.title = '';
       }
@@ -786,9 +791,9 @@ function _declutterPins(): void {
   const COLLISION_RADIUS = 26;
   const CASCADE_STEP = 14;
 
-  // Only operate on entries with a known base position
+  // Only operate on entries with a known base position that are currently visible
   const active = _pinEntries.filter(
-    e => e.baseLeft !== undefined && e.baseTop !== undefined
+    e => e.baseLeft !== undefined && e.baseTop !== undefined && e.pin.style.display !== 'none' && !e.pin.classList.contains('sfx-pin-orphaned')
   );
 
   if (active.length === 0) return;

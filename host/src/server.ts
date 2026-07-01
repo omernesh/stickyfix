@@ -228,10 +228,12 @@ async function handleListAnnotations(
     const pageUrl = params.get('url') ?? '';
     // D-04: re-validate targetDir per request; absent → cfg.notesDir (back-compat)
     const notesDir = resolveNotesDir(cfg, params.get('targetDir') ?? undefined);
+    // ?done=1 → include archived (*.read.md / status:read) notes (panel-only opt-in)
+    const includeDone = params.get('done') === '1';
     // ?scope=all → project-wide listing (notes from every page, not just pageUrl)
     const pins = params.get('scope') === 'all'
-      ? listAnnotations(notesDir, pageUrl, { allUrls: true })
-      : listAnnotations(notesDir, pageUrl);
+      ? listAnnotations(notesDir, pageUrl, { allUrls: true, includeDone })
+      : listAnnotations(notesDir, pageUrl, { includeDone });
     res.writeHead(200, { 'Content-Type': 'application/json' });
     res.end(JSON.stringify({ ok: true, pins }));
   } catch (e: unknown) {

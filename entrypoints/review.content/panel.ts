@@ -28,7 +28,7 @@ interface PinDescriptor {
   note_position?: { x: number; y: number };
 }
 
-type FilterStatus = 'all' | 'unread' | 'flagged' | 'resolved';
+type FilterStatus = 'all' | 'unread' | 'flagged' | 'resolved' | 'read';
 
 // Module-level state (reset on teardown)
 let _container: HTMLElement | null = null;
@@ -132,6 +132,7 @@ export function mountPanel(
     { key: 'unread', label: 'Unread' },
     { key: 'flagged', label: 'Flagged' },
     { key: 'resolved', label: 'Resolved' },
+    { key: 'read', label: 'Read' },
   ];
 
   for (const f of filters) {
@@ -244,7 +245,7 @@ function fetchAndRender(): void {
 
   try {
     chrome.runtime.sendMessage(
-      { type: SFX_LIST_ANNOTATIONS, tabId: _tabId, scope },
+      { type: SFX_LIST_ANNOTATIONS, tabId: _tabId, scope, done: true },
       (resp: { ok: boolean; pins?: PinDescriptor[]; error?: string } | undefined) => {
         if (chrome.runtime.lastError || !resp) {
           const errMsg = chrome.runtime.lastError?.message ?? 'No response from SW';
@@ -268,8 +269,13 @@ function fetchAndRender(): void {
 function filteredPins(): PinDescriptor[] {
   let result = _pins;
 
-  // Status filter
-  if (_filter !== 'all') {
+  // Status filter. 'all' shows OPEN work only (status !== 'read'); the dedicated
+  // 'read' chip shows archived notes; other chips match their status exactly.
+  if (_filter === 'all') {
+    result = result.filter(p => p.status !== 'read');
+  } else if (_filter === 'read') {
+    result = result.filter(p => p.status === 'read');
+  } else {
     result = result.filter(p => p.status === _filter);
   }
 
@@ -286,11 +292,13 @@ function filteredPins(): PinDescriptor[] {
 }
 
 function updateFilterCounts(): void {
+  const openCount = _pins.filter(p => p.status !== 'read').length;
   const counts: Record<FilterStatus, number> = {
-    all: _pins.length,
+    all: openCount,
     unread: _pins.filter(p => p.status === 'unread').length,
     flagged: _pins.filter(p => p.status === 'flagged').length,
     resolved: _pins.filter(p => p.status === 'resolved').length,
+    read: _pins.filter(p => p.status === 'read').length,
   };
 
   for (const [key, btn] of _filterBtns) {
@@ -299,7 +307,7 @@ function updateFilterCounts(): void {
   }
 
   if (_countEl) {
-    _countEl.textContent = String(_pins.length);
+    _countEl.textContent = String(openCount);
   }
 }
 
